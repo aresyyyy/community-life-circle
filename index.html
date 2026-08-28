@@ -384,9 +384,14 @@ var CONFIG = {
   /* 管理口令：普通居民只读，双击顶部社区名称输入此口令后可进入管理模式（编辑点位）。
      上线前请务必改成你自己的口令。 */
   adminPassword: "123456",
-  /* 可选外部数据源：如果设置了一个公开的 JSON 商户数据地址（如管理员版导出的数据托管地址），
-     居民版会优先加载该数据并显示，实现"管理员维护、居民实时查看"。
-     留空 "" 则使用页面内置数据。 */
+  /* 外部数据源（商户数据）：按顺序依次尝试加载，取第一个成功的。
+     - 第一个：GitHub raw（实时更新，改 data.json 后立即可见，但国内偶发慢/失败）
+     - 第二个：jsDelivr CDN（稳定、加载快，但改 data.json 后可能有几分钟缓存延迟）
+     若全部失败，页面会显示"数据加载失败"提示，不会显示任何假数据。 */
+  dataSources: [
+    "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json",
+    "https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@main/data.json"
+  ],
   externalDataUrl: "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json"
 };
 
@@ -397,19 +402,7 @@ var CONFIG = {
  *   - 推荐做法：在"地图"页面开启右下角"标注"按钮，直接点击图上位置即可添加点位，
  *     系统会自动计算 x、y 坐标并保存；也可以在这里手动填写。
  */
-var BUILTIN_POINTS = [
-  { cat:"party", name:"XX社区党群服务中心", tag:"党群服务", x:50, y:38, address:"社区主路东侧中心位置", tel:"0375-1234001", hours:"周一至周五 8:30-18:00", note:"党务政务、便民服务、议事活动" },
-  { cat:"school", name:"育才小学", tag:"公办小学", x:34, y:72, address:"文化路26号", tel:"0375-1234002", hours:"周一至周五 7:30-17:30", note:"义务教育阶段学校" },
-  { cat:"charge", name:"社区充电站", tag:"电动车充电", x:72, y:58, address:"社区西门停车场", tel:"", hours:"24小时", note:"电动自行车充电桩，扫码充电" },
-  { cat:"supermarket", name:"好邻居超市", tag:"生鲜便利", x:24, y:24, address:"建设路8号", tel:"0375-1234004", hours:"每日 7:00-22:00", note:"果蔬生鲜、日用百货" },
-  { cat:"express", name:"便民快递驿站", tag:"快递驿站", x:76, y:18, address:"社区北门西侧", tel:"0375-1234005", hours:"每日 9:00-20:00", note:"代收代寄快递包裹" },
-  { cat:"clinic", name:"社区卫生服务站", tag:"医保定点", x:56, y:14, address:"社区服务中心一楼东侧", tel:"0375-1234006", hours:"周一至周日 8:00-20:00", note:"常见病诊疗、慢病随访" },
-  { cat:"bus", name:"社区南门公交站", tag:"公交站点", x:16, y:62, address:"社区南门出口", tel:"", hours:"", note:"公交线路 11路、21路" },
-  { cat:"toilet", name:"中心广场公厕", tag:"公共卫生间", x:46, y:64, address:"中心广场西北角", tel:"", hours:"24小时开放", note:"配有第三卫生间" },
-  { cat:"bank", name:"农商银行社区支行", tag:"银行网点", x:66, y:70, address:"迎宾路18号", tel:"0375-1234009", hours:"周一至周五 9:00-17:00", note:"存取款、开卡、自助设备" },
-  { cat:"square", name:"中心休闲广场", tag:"公共空间", x:50, y:52, address:"社区中心位置", tel:"", hours:"全天开放", note:"健身器材、休闲座椅、活动场地" },
-  { cat:"party", name:"高阳社区", tag:"", x:39.68, y:59.26, address:"幼儿园对面", tel:"1234567", hours:"", note:"" },
-];
+var BUILTIN_POINTS = [];
 
 /* 分类配置（颜色即地图点位颜色） */
 var CATEGORIES = {
@@ -468,21 +461,38 @@ function allPoints(){
 var EXTERNAL_POINTS = null;
 var EXTERNAL_POINTS_N = 0;
 function loadExternalData(){
-  if(!CONFIG.externalDataUrl) return;
-  /* cache:no-store 确保每次扫码/刷新都获取 data.json 最新内容，不受浏览器缓存影响 */
-  fetch(CONFIG.externalDataUrl, { cache:"no-store" })
-    .then(function(r){ if(!r.ok) throw new Error("http " + r.status); return r.json(); })
-    .then(function(arr){
-      if(Array.isArray(arr) && arr.length){
-        EXTERNAL_POINTS = arr.map(function(p){
-          return { cat:p.cat, name:p.name, tag:p.tag||"", x:+p.x, y:+p.y, address:p.address||"", tel:p.tel||"", hours:p.hours||"", note:p.note||"" };
-        });
-        EXTERNAL_POINTS_N = arr.length;
-        CONFIG.dataUpdated = "线上实时同步";
-        renderHome(); renderChips(); renderPois(); renderMapList();
-      }
-    })
-    .catch(function(){ /* 外部数据加载失败时使用内置数据 */ });
+  var urls = (CONFIG.dataSources && CONFIG.dataSources.length) ? CONFIG.dataSources
+            : (CONFIG.externalDataUrl ? [CONFIG.externalDataUrl] : []);
+  if(!urls.length) return;
+  var idx = 0;
+  function setTip(txt){
+    var el = document.getElementById("dataSrcTip");
+    if(el){ el.textContent = txt; el.style.display = "inline"; }
+  }
+  function onLoaded(arr){
+    EXTERNAL_POINTS = arr.map(function(p){
+      return { cat:p.cat, name:p.name, tag:p.tag||"", x:+p.x, y:+p.y, address:p.address||"", tel:p.tel||"", hours:p.hours||"", note:p.note||"" };
+    });
+    EXTERNAL_POINTS_N = arr.length;
+    CONFIG.dataUpdated = "线上实时同步";
+    renderHome(); renderChips(); renderPois(); renderMapList();
+    setTip("（已同步线上最新数据 " + arr.length + " 家）");
+  }
+  function onFail(){
+    /* 全部数据源失败：明确提示，不显示任何假数据 */
+    setTip("（线上数据加载失败，请下拉刷新重试）");
+    renderHome(); renderChips(); renderPois(); renderMapList();
+  }
+  function tryNext(){
+    if(idx >= urls.length){ onFail(); return; }
+    var u = urls[idx++];
+    /* cache:no-store 确保每次扫码都获取 data.json 最新内容 */
+    fetch(u, { cache:"no-store" })
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(arr){ if(Array.isArray(arr) && arr.length){ onLoaded(arr); } else { tryNext(); } })
+      .catch(tryNext);
+  }
+  tryNext();
 }
 
 /* ================= 管理模式（居民只读） ================= */
@@ -1101,14 +1111,6 @@ initAdmin();
 renderHome();
 renderChips();
 loadExternalData();
-function showDataSrcTip(){
-  var el = document.getElementById("dataSrcTip");
-  if(!el) return;
-  if(EXTERNAL_POINTS_N > 0){
-    el.textContent = "（已同步线上最新数据 " + EXTERNAL_POINTS_N + " 家）";
-  }
-}
-setTimeout(showDataSrcTip, 800);
 /* 预加载地图底图：提前缓存，进入地图页时更快显示 */
 var _preMap = new Image(); _preMap.src = CONFIG.mapImage;
 if(!location.hash){ location.hash = "#/home"; }

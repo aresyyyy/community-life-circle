@@ -208,14 +208,19 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 21h14"/></svg>
             导入数据
           </button>
+          <button class="dbtn" id="btnPullData">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+            从线上 data.json 拉取
+          </button>
         </div>
         <div class="form-group"><label>点位数据（JSON）</label>
           <textarea id="jsonBox" placeholder='粘贴或导出的 JSON 数据，格式示例：[{"cat":"clinic","name":"名称","x":50,"y":50,"address":"地址","tel":"电话","hours":"时间","note":"备注"}]'></textarea>
         </div>
         <div class="data-tip">
           1. 在管理员版中增删改后，点击"导出全部数据"复制 JSON。<br>
-          2. 把 JSON 提供给页面维护人员，更新到"居民版"页面数据后重新发布，所有居民扫码即可看到最新内容。<br>
-          3. "导入数据"会<b>覆盖</b>当前全部点位，请先导出备份。
+          2. 打开 GitHub 仓库，编辑 <b>data.json</b>，粘贴覆盖后保存。约 1 分钟后，居民扫码即可看到最新内容（无需换二维码）。<br>
+          3. 若你或其他电脑想同步线上最新数据，点"从线上 data.json 拉取"，会<b>覆盖</b>本机数据。<br>
+          4. "导入数据"会<b>覆盖</b>当前全部点位，请先导出备份。
         </div>
       </div>
     </div>
@@ -252,7 +257,9 @@ var CONFIG = {
   communityName: "XX社区便民生活圈",
   adminPassword: "123456",        // 管理口令（上线前请修改）
   mapImage: "./map-opt.jpg",
-  mapCandidates: ["./map-opt.jpg","https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@main/map-opt.jpg","./map.webp","./map.png","https://aka.doubaocdn.com/s/5FziFU75zo"]
+  mapCandidates: ["./map-opt.jpg","https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@main/map-opt.jpg","./map.webp","./map.png","https://aka.doubaocdn.com/s/5FziFU75zo"],
+  /* 线上数据源：与居民版同一地址。点击"从线上 data.json 拉取"可把线上最新数据同步到本机。 */
+  externalDataUrl: "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json"
 };
 
 /* ================= 分类配置 ================= */
@@ -735,6 +742,26 @@ document.getElementById("btnImportFrom").addEventListener("click", function(){
   saveData("导入完成，共 " + points.length + " 个商户");
   renderPois(); renderList();
   hideSheets();
+});
+/* 从线上 data.json 拉取最新数据（覆盖本机） */
+document.getElementById("btnPullData").addEventListener("click", function(){
+  var btn = this, oldText = btn.innerHTML;
+  btn.textContent = "正在拉取…";
+  fetch(CONFIG.externalDataUrl, { cache:"no-store" })
+    .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+    .then(function(arr){
+      if(!Array.isArray(arr) || !arr.length) throw new Error("线上数据为空");
+      points = arr.map(function(p){
+        return { cat:p.cat, name:p.name, tag:p.tag||"", x:+p.x, y:+p.y, address:p.address||"", tel:p.tel||"", hours:p.hours||"", note:p.note||"" };
+      });
+      saveData("已从线上 data.json 拉取 " + points.length + " 条");
+      renderPois(); renderList(); hideSheets();
+      window.alert("已从线上 data.json 拉取 " + points.length + " 条商户并同步到本机。\n\n提示：你在本机新增/修改的数据如需发布，请导出 JSON 覆盖 GitHub 的 data.json。");
+    })
+    .catch(function(e){
+      btn.innerHTML = oldText;
+      window.alert("拉取失败：" + e.message + "\n请检查网络或 data.json 格式后重试。");
+    });
 });
 
 /* ================= 面板切换 ================= */

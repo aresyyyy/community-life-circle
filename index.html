@@ -239,7 +239,7 @@
 
     <div class="promise-strip">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
-      <div>信息由社区统一整理维护，如商家变动或信息有误，欢迎致电社区反馈更正。</div>
+      <div>信息由社区统一整理维护，如商家变动或信息有误，欢迎致电社区反馈更正。<span id="dataSrcTip" style="color:var(--green-600, #1F7A5C);font-weight:600"></span></div>
     </div>
 
     <footer class="home-foot">
@@ -466,15 +466,19 @@ function allPoints(){
 
 /* 若配置了外部数据源，加载管理员维护的最新商户数据 */
 var EXTERNAL_POINTS = null;
+var EXTERNAL_POINTS_N = 0;
 function loadExternalData(){
   if(!CONFIG.externalDataUrl) return;
-  fetch(CONFIG.externalDataUrl)
+  /* cache:no-store 确保每次扫码/刷新都获取 data.json 最新内容，不受浏览器缓存影响 */
+  fetch(CONFIG.externalDataUrl, { cache:"no-store" })
     .then(function(r){ if(!r.ok) throw new Error("http " + r.status); return r.json(); })
     .then(function(arr){
       if(Array.isArray(arr) && arr.length){
         EXTERNAL_POINTS = arr.map(function(p){
           return { cat:p.cat, name:p.name, tag:p.tag||"", x:+p.x, y:+p.y, address:p.address||"", tel:p.tel||"", hours:p.hours||"", note:p.note||"" };
         });
+        EXTERNAL_POINTS_N = arr.length;
+        CONFIG.dataUpdated = "线上实时同步";
         renderHome(); renderChips(); renderPois(); renderMapList();
       }
     })
@@ -1097,6 +1101,14 @@ initAdmin();
 renderHome();
 renderChips();
 loadExternalData();
+function showDataSrcTip(){
+  var el = document.getElementById("dataSrcTip");
+  if(!el) return;
+  if(EXTERNAL_POINTS_N > 0){
+    el.textContent = "（已同步线上最新数据 " + EXTERNAL_POINTS_N + " 家）";
+  }
+}
+setTimeout(showDataSrcTip, 800);
 /* 预加载地图底图：提前缓存，进入地图页时更快显示 */
 var _preMap = new Image(); _preMap.src = CONFIG.mapImage;
 if(!location.hash){ location.hash = "#/home"; }

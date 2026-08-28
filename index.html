@@ -366,8 +366,8 @@ var CONFIG = {
   /* 社区总平面图：
      底图依次尝试下方候选（png 全兼容最清晰 / jpg 加载快 / webp 体积小 / 最后回退 CDN）。
      老手机浏览器不支持 WebP，所以默认用 png。 */
-  mapImage: "./map.jpg",
-  mapCandidates: ["./map.jpg","./map.png","./map.webp","https://aka.doubaocdn.com/s/5FziFU75zo"],
+  mapImage: "./map-opt.jpg",
+  mapCandidates: ["./map-opt.jpg","https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@main/map-opt.jpg","./map.webp","./map.png","https://aka.doubaocdn.com/s/5FziFU75zo"],
   dataUpdated: "2026-08",
   /* 管理口令：普通居民只读，双击顶部社区名称输入此口令后可进入管理模式（编辑点位）。
      上线前请务必改成你自己的口令。 */
@@ -969,6 +969,8 @@ initAdmin();
 renderHome();
 renderChips();
 loadExternalData();
+/* 预加载地图底图：提前缓存，进入地图页时更快显示 */
+var _preMap = new Image(); _preMap.src = CONFIG.mapImage;
 if(!location.hash){ location.hash = "#/home"; }
 parseHash();
 </script>

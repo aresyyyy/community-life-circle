@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1F7A5C">
+<title>便民生活圈 · 管理后台</title>
+<style>
+  :root{
+    --green-900:#0E4A36; --green-700:#1F7A5C; --green-600:#2A8F6D;
+    --green-100:#E3F2EC; --green-50:#F1F8F5;
+    --ink:#20312B; --ink-soft:#5C6F67; --ink-faint:#8AA096;
+    --line:#E4EBE7; --bg:#F4F7F5; --card:#FFFFFF;
+    --radius-lg:20px; --radius-md:14px;
+    --shadow-card:0 2px 14px rgba(18,58,44,.06);
+    --danger:#C0392B;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  svg{display:block}
+  input,select,textarea{font-family:inherit}
+
+  /* ===== 口令门 ===== */
+  .gate{position:fixed;inset:0;z-index:100;background:linear-gradient(160deg,var(--green-700),var(--green-900));display:flex;align-items:center;justify-content:center;padding:26px}
+  .gate-card{background:#fff;width:100%;max-width:400px;border-radius:22px;padding:30px 26px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .gate-card h1{font-size:21px;font-weight:800;margin-bottom:6px;color:var(--ink)}
+  .gate-card p{font-size:12.5px;color:var(--ink-faint);margin-bottom:20px}
+  .gate-card input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;padding:0 14px;font-size:16px;letter-spacing:3px;outline:none;background:#FAFBFA}
+  .gate-card input:focus{border-color:var(--green-600)}
+  .gate-card .btn{width:100%;height:48px;border-radius:12px;background:var(--green-700);color:#fff;font-size:15px;font-weight:700;margin-top:14px}
+  .gate-card .btn:active{background:var(--green-900)}
+  .gate-err{display:none;color:var(--danger);font-size:12.5px;margin-top:10px}
+
+  /* ===== 顶栏 ===== */
+  .topbar{position:sticky;top:0;z-index:30;background:var(--green-700);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;display:flex;align-items:center;gap:10px}
+  .topbar .t{flex:1;min-width:0}
+  .topbar .t h1{font-size:17px;font-weight:800}
+  .topbar .t p{font-size:11.5px;color:rgba(255,255,255,.8)}
+  .topbar .act{height:40px;padding:0 14px;border-radius:11px;background:rgba(255,255,255,.16);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .topbar .act svg{width:16px;height:16px}
+  .topbar .act:active{background:rgba(255,255,255,.3)}
+  .save-state{font-size:11px;color:rgba(255,255,255,.85)}
+
+  /* ===== 统计 ===== */
+  .stats{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;scrollbar-width:none}
+  .stats::-webkit-scrollbar{display:none}
+  .stat{flex-shrink:0;display:flex;align-items:center;gap:7px;background:var(--card);border-radius:12px;padding:9px 13px;box-shadow:var(--shadow-card)}
+  .stat .cdot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  .stat b{font-size:15px}
+  .stat span{font-size:11.5px;color:var(--ink-faint)}
+
+  /* ===== 地图 ===== */
+  .map-viewport{position:relative;width:100%;height:46vh;overflow:hidden;background:#DCE6E0;touch-action:none;user-select:none;-webkit-user-select:none}
+  .map-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+  .map-img{display:block;width:100%;pointer-events:none}
+  .poi{position:absolute;transform:translate(-50%,-50%);width:42px;height:42px;display:flex;align-items:center;justify-content:center;z-index:5;cursor:pointer;touch-action:none}
+  .poi-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;border:2.5px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.32);transition:transform .15s ease}
+  .poi-dot svg{width:18px;height:18px}
+  .poi.selected .poi-dot{transform:scale(1.2);border-color:#FFD76A}
+  .poi.dragging .poi-dot{transform:scale(1.25);box-shadow:0 6px 18px rgba(0,0,0,.4)}
+
+  .map-tools{position:absolute;right:12px;bottom:14px;z-index:20;display:flex;flex-direction:column;gap:9px}
+  .tool-btn{width:44px;height:44px;border-radius:12px;background:var(--card);color:var(--ink-soft);box-shadow:0 2px 10px rgba(18,58,44,.16);display:flex;align-items:center;justify-content:center}
+  .tool-btn:active{background:var(--green-50);color:var(--green-700)}
+  .tool-btn.on{background:var(--green-700);color:#fff}
+  .tool-btn svg{width:21px;height:21px}
+  .map-hint{position:absolute;left:12px;top:12px;z-index:20;background:rgba(255,255,255,.94);border-radius:10px;padding:7px 12px;font-size:11.5px;color:var(--ink-soft);box-shadow:0 2px 8px rgba(18,58,44,.12);pointer-events:none;display:none}
+  .map-hint.show{display:block}
+  .map-bar-note{font-size:11px;color:var(--ink-faint);text-align:center;padding:7px 16px 0}
+
+  /* ===== 面板 ===== */
+  .panel{padding:14px 16px 40px}
+  .panel-tabs{display:flex;gap:8px;margin-bottom:14px}
+  .ptab{flex:1;height:42px;border-radius:12px;font-size:14px;font-weight:600;color:var(--ink-soft);background:var(--card);border:1px solid var(--line)}
+  .ptab.on{background:var(--green-700);color:#fff;border-color:transparent}
+  .add-btn{width:100%;height:48px;border-radius:13px;background:var(--green-700);color:#fff;font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px}
+  .add-btn svg{width:18px;height:18px}
+  .add-btn:active{background:var(--green-900)}
+
+  .merchant-list{display:grid;gap:12px}
+  .mcard{background:var(--card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);padding:14px;display:flex;gap:12px;align-items:center}
+  .mcard .m-ico{width:44px;height:44px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff}
+  .mcard .m-ico svg{width:23px;height:23px}
+  .mcard .m-main{flex:1;min-width:0}
+  .mcard .m-name{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700}
+  .mcard .m-name .usr{font-size:10px;color:var(--green-700);background:var(--green-50);border:1px solid var(--green-100);padding:1px 6px;border-radius:999px}
+  .mcard .m-sub{font-size:11.5px;color:var(--ink-faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mcard .m-ops{display:flex;gap:6px;flex-shrink:0}
+  .mcard .m-op{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--ink-soft)}
+  .mcard .m-op.del{color:var(--danger)}
+  .mcard .m-op svg{width:18px;height:18px}
+  .mcard .m-op:active{background:var(--line)}
+
+  /* ===== 数据面板 ===== */
+  .data-panel{display:none}
+  .data-panel.show{display:block}
+  .data-actions{display:flex;gap:10px;margin-bottom:12px}
+  .data-actions .dbtn{flex:1;height:46px;border-radius:12px;font-size:14px;font-weight:600;background:var(--green-700);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px}
+  .data-actions .dbtn.alt{background:var(--green-50);color:var(--green-700)}
+  .data-actions .dbtn svg{width:17px;height:17px}
+  .data-panel textarea{width:100%;height:180px;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:12px;font-family:ui-monospace,monospace;background:#FAFBFA;color:var(--ink-soft);resize:vertical;outline:none}
+  .data-tip{font-size:11.5px;color:var(--ink-faint);margin-top:10px;line-height:1.7}
+
+  /* ===== 弹层 ===== */
+  .sheet-mask{position:fixed;inset:0;z-index:60;background:rgba(15,30,24,.5);opacity:0;pointer-events:none;transition:opacity .22s ease}
+  .sheet-mask.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--card);border-radius:22px 22px 0 0;padding:8px 20px calc(env(safe-area-inset-bottom) + 20px);transform:translateY(105%);transition:transform .26s cubic-bezier(.2,.8,.3,1);max-height:88vh;overflow-y:auto}
+  .sheet.show{transform:none}
+  .sheet-grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:6px auto 16px}
+  .sheet-head{display:flex;align-items:center;margin-bottom:4px}
+  .sheet-head h2{font-size:19px;font-weight:800;flex:1}
+  .form-group{margin-top:13px}
+  .form-group label{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:6px}
+  .form-group input,.form-group select{width:100%;height:44px;border:1px solid var(--line);border-radius:11px;padding:0 13px;font-size:14px;background:#FAFBFA;color:var(--ink);outline:none}
+  .form-group input:focus,.form-group select:focus{border-color:var(--green-600);background:#fff}
+  .form-row{display:flex;gap:10px}
+  .form-row .form-group{flex:1}
+  .form-save{width:100%;height:48px;border-radius:13px;background:var(--green-700);color:#fff;font-size:15px;font-weight:700;margin-top:18px}
+  .form-save:active{background:var(--green-900)}
+  .form-save.danger{background:var(--danger)}
+  .form-save.danger:active{background:#922B21}
+  .coord{display:flex;align-items:center;gap:10px;background:var(--green-50);border:1px dashed var(--green-100);border-radius:11px;padding:10px 12px;margin-top:13px}
+  .coord .cv{flex:1;font-size:13px;color:var(--green-900)}
+  .coord .cb{height:38px;padding:0 13px;border-radius:10px;background:var(--green-700);color:#fff;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+  .coord .cb.on{background:var(--orange,#E07B2C)}
+  .form-tip{font-size:11.5px;color:var(--ink-faint);margin-top:10px;line-height:1.7}
+
+  @media (min-width:900px){
+    .wrap{max-width:860px;margin:0 auto}
+    .stats{padding-left:0;padding-right:0}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== 口令门 ===== -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <h1>便民生活圈 · 管理后台</h1>
+    <p>仅社区工作人员使用，请输入管理口令进入。</p>
+    <input type="password" id="gatePwd" placeholder="管理口令" autocomplete="off">
+    <button class="btn" id="gateBtn">进入管理后台</button>
+    <div class="gate-err" id="gateErr">口令不正确，请重试。</div>
+  </div>
+</div>
+
+<!-- ===== 主界面 ===== -->
+<div id="app" style="display:none">
+  <div class="topbar">
+    <div class="t">
+      <h1>便民生活圈 · 管理后台</h1>
+      <p id="saveState">数据已保存</p>
+    </div>
+    <button class="act" id="btnLogout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      退出
+    </button>
+  </div>
+
+  <div class="wrap">
+    <div class="stats" id="stats"></div>
+
+    <div class="map-viewport" id="mapViewport">
+      <div class="map-canvas" id="mapCanvas">
+        <img class="map-img" id="mapImg" alt="社区地图" src="">
+      </div>
+      <div class="map-hint" id="mapHint">标注模式：点击地图添加商户</div>
+      <div class="map-tools">
+        <button class="tool-btn" id="btnZi" aria-label="放大"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="tool-btn" id="btnZo" aria-label="缩小"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+        <button class="tool-btn" id="btnFit" aria-label="适应"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+        <button class="tool-btn" id="btnMark" aria-label="标注"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.6-7-10a7 7 0 1 1 14 0c0 5.4-7 10-7 10z"/><circle cx="12" cy="11" r="2.6"/><path d="M12 8v6M9 11h6"/></svg></button>
+      </div>
+    </div>
+    <div class="map-bar-note">提示：点击地图上的点位可编辑；开启"标注"后点击空白处可新增商户；长按点位可拖动调整位置。</div>
+
+    <div class="panel">
+      <div class="panel-tabs">
+        <button class="ptab on" id="tabList">商户列表</button>
+        <button class="ptab" id="tabData">数据导入 / 导出</button>
+      </div>
+
+      <div id="listPanel">
+        <button class="add-btn" id="btnAdd">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          在地图上添加商户
+        </button>
+        <div class="merchant-list" id="merchantList"></div>
+      </div>
+
+      <div class="data-panel" id="dataPanel">
+        <div class="data-actions">
+          <button class="dbtn" id="btnExport">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+            导出全部数据
+          </button>
+          <button class="dbtn alt" id="btnImportFrom">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 21h14"/></svg>
+            导入数据
+          </button>
+        </div>
+        <div class="form-group"><label>点位数据（JSON）</label>
+          <textarea id="jsonBox" placeholder='粘贴或导出的 JSON 数据，格式示例：[{"cat":"clinic","name":"名称","x":50,"y":50,"address":"地址","tel":"电话","hours":"时间","note":"备注"}]'></textarea>
+        </div>
+        <div class="data-tip">
+          1. 在管理员版中增删改后，点击"导出全部数据"复制 JSON。<br>
+          2. 把 JSON 提供给页面维护人员，更新到"居民版"页面数据后重新发布，所有居民扫码即可看到最新内容。<br>
+          3. "导入数据"会<b>覆盖</b>当前全部点位，请先导出备份。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 商户编辑弹层 ===== -->
+<div class="sheet-mask" id="sheetMask"></div>
+<div class="sheet" id="editSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head"><h2 id="editTitle">添加商户</h2></div>
+  <div class="form-group"><label>商户名称</label><input id="fName" placeholder="如：社区卫生服务站"></div>
+  <div class="form-row">
+    <div class="form-group"><label>所属分类</label><select id="fCat"></select></div>
+    <div class="form-group"><label>营业时间</label><input id="fHours" placeholder="如 8:00-20:00"></div>
+  </div>
+  <div class="form-group"><label>地址描述</label><input id="fAddr" placeholder="如：社区服务中心一楼东侧"></div>
+  <div class="form-row">
+    <div class="form-group"><label>联系电话</label><input id="fTel" placeholder="如 0375-1234567"></div>
+    <div class="form-group"><label>备注（选填）</label><input id="fNote" placeholder="如：医保定点、可上门"></div>
+  </div>
+  <div class="coord">
+    <span class="cv" id="coordVal">图上位置：x 0% · y 0%</span>
+    <button class="cb" id="btnRelocate">重新定位</button>
+  </div>
+  <button class="form-save" id="btnSave">保存商户</button>
+  <button class="form-save danger" id="btnDelete" style="display:none">删除该商户</button>
+  <div class="form-tip" id="editTip">新商户保存后会自动出现在地图和商户列表中，并保存到本机。</div>
+</div>
+
+<script>
+/* ================= 配置 ================= */
+var CONFIG = {
+  communityName: "XX社区便民生活圈",
+  adminPassword: "123456",        // 管理口令（上线前请修改）
+  mapImage: "./map.webp",
+  mapImageFallback: "https://aka.doubaocdn.com/s/5FziFU75zo"
+};
+
+/* ================= 分类配置 ================= */
+var CATEGORIES = {
+  party:       { name:"党群服务中心", desc:"党群服务中心与政务服务",   color:"#C0392B", icon:"flag" },
+  school:      { name:"学校",         desc:"幼儿园、中小学与教育机构", color:"#4A7BD0", icon:"graduation" },
+  charge:      { name:"充电桩",       desc:"电动车与汽车充电设施",     color:"#2E9E5B", icon:"plugzap" },
+  supermarket: { name:"超市",         desc:"超市与生鲜便利",           color:"#E8942E", icon:"market" },
+  express:     { name:"快递",         desc:"快递驿站与寄取件点",       color:"#3A9DB5", icon:"express" },
+  clinic:      { name:"诊所",         desc:"社区诊所与医疗机构",       color:"#E05A4E", icon:"clinic" },
+  bus:         { name:"公交站点",     desc:"公交站点与出行服务",       color:"#5D7FA3", icon:"bus" },
+  toilet:      { name:"公厕",         desc:"公共卫生间",               color:"#7A8A99", icon:"toilet" },
+  bank:        { name:"银行",         desc:"银行网点与自助服务",       color:"#3A7BD5", icon:"bank" },
+  square:      { name:"广场",         desc:"广场与公共活动空间",       color:"#9B59B6", icon:"landmark" }
+};
+var CAT_ORDER = ["party","school","charge","supermarket","express","clinic","bus","toilet","bank","square"];
+
+/* 初始示例数据（居民版同源，可导入导出维护） */
+var INITIAL_POINTS = [
+  { cat:"party", name:"XX社区党群服务中心", tag:"党群服务", x:50, y:38, address:"社区主路东侧中心位置", tel:"0375-1234001", hours:"周一至周五 8:30-18:00", note:"党务政务、便民服务、议事活动" },
+  { cat:"school", name:"育才小学", tag:"公办小学", x:34, y:72, address:"文化路26号", tel:"0375-1234002", hours:"周一至周五 7:30-17:30", note:"义务教育阶段学校" },
+  { cat:"charge", name:"社区充电站", tag:"电动车充电", x:72, y:58, address:"社区西门停车场", tel:"", hours:"24小时", note:"电动自行车充电桩，扫码充电" },
+  { cat:"supermarket", name:"好邻居超市", tag:"生鲜便利", x:24, y:24, address:"建设路8号", tel:"0375-1234004", hours:"每日 7:00-22:00", note:"果蔬生鲜、日用百货" },
+  { cat:"express", name:"便民快递驿站", tag:"快递驿站", x:76, y:18, address:"社区北门西侧", tel:"0375-1234005", hours:"每日 9:00-20:00", note:"代收代寄快递包裹" },
+  { cat:"clinic", name:"社区卫生服务站", tag:"医保定点", x:56, y:14, address:"社区服务中心一楼东侧", tel:"0375-1234006", hours:"周一至周日 8:00-20:00", note:"常见病诊疗、慢病随访" },
+  { cat:"bus", name:"社区南门公交站", tag:"公交站点", x:16, y:62, address:"社区南门出口", tel:"", hours:"", note:"公交线路 11路、21路" },
+  { cat:"toilet", name:"中心广场公厕", tag:"公共卫生间", x:46, y:64, address:"中心广场西北角", tel:"", hours:"24小时开放", note:"配有第三卫生间" },
+  { cat:"bank", name:"农商银行社区支行", tag:"银行网点", x:66, y:70, address:"迎宾路18号", tel:"0375-1234009", hours:"周一至周五 9:00-17:00", note:"存取款、开卡、自助设备" },
+  { cat:"square", name:"中心休闲广场", tag:"公共空间", x:50, y:52, address:"社区中心位置", tel:"", hours:"全天开放", note:"健身器材、休闲座椅、活动场地" },
+  { cat:"party", name:"高阳社区", tag:"", x:39.68, y:59.26, address:"幼儿园对面", tel:"1234567", hours:"", note:"" },
+];
+
+/* ================= SVG 图标 ================= */
+var ICONS = {
+  flag:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg>',
+  graduation:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m22 10-10-5-10 5 10 5 10-5z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>',
+  plugzap:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4z"/><path d="m2 22 3-3"/><path d="M7.5 13.5 10 11"/><path d="M10.5 16.5 13 14"/><path d="m18 3-4 4h6l-4 4"/></svg>',
+  market:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
+  express:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>',
+  clinic:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M6 7v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M12 11v5"/><path d="M9.5 13.5h5"/></svg>',
+  bus:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="13" rx="2"/><path d="M4 10h16"/><circle cx="8.5" cy="16" r="1.8"/><circle cx="15.5" cy="16" r="1.8"/><path d="M8 6h8"/></svg>',
+  toilet:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2 0-2.5-2-4-2"/><path d="M12 6c2 0 2.5-2 4-2"/><path d="M4 11h16"/><path d="M5 11v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M9 15h.01"/><path d="M15 15h.01"/></svg>',
+  bank:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6"/><path d="M4 10h16"/><path d="M5 10v8"/><path d="M19 10v8"/><path d="M3 20h18"/><path d="M9 14h6"/></svg>',
+  landmark:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M6 18v-7"/><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="m12 2 9 6H3l9-6z"/></svg>',
+  edit:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
+  trash:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg>'
+};
+
+/* ================= 状态 ================= */
+var DATA_KEY = "lfq_admin_data_v2";
+var ADMIN_KEY = "lfq_admin_session_v1";
+var points = [];
+var mapState = { s:1, tx:0, ty:0, imgW:2428, imgH:1440, inited:false, moved:false };
+var markMode = false;
+var relocateMode = false;
+var editingIndex = -1;      // -1 表示新增
+var dragPoint = null;       // 正在拖动的点位
+
+/* ================= 数据读写 ================= */
+function loadData(){
+  try{
+    var raw = localStorage.getItem(DATA_KEY);
+    if(raw){ points = JSON.parse(raw); return; }
+  }catch(e){}
+  points = INITIAL_POINTS.map(function(p){ return JSON.parse(JSON.stringify(p)); });
+}
+function saveData(msg){
+  try{ localStorage.setItem(DATA_KEY, JSON.stringify(points)); }catch(e){}
+  var st = document.getElementById("saveState");
+  if(st) st.textContent = msg || "数据已保存 " + new Date().toLocaleTimeString();
+  renderStats();
+}
+
+/* ================= 口令门 ================= */
+function enterGate(){
+  var pwd = document.getElementById("gatePwd").value;
+  if(pwd === CONFIG.adminPassword){
+    document.getElementById("gate").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    try{ localStorage.setItem(ADMIN_KEY, "1"); }catch(e){}
+    initApp();
+  } else {
+    document.getElementById("gateErr").style.display = "block";
+  }
+}
+document.getElementById("gateBtn").addEventListener("click", enterGate);
+document.getElementById("gatePwd").addEventListener("keydown", function(e){ if(e.key === "Enter") enterGate(); });
+document.getElementById("btnLogout").addEventListener("click", function(){
+  try{ localStorage.removeItem(ADMIN_KEY); }catch(e){}
+  location.reload();
+});
+
+/* ================= 地图初始化 ================= */
+var mapEls = null;
+function initMap(){
+  mapEls = { vp:document.getElementById("mapViewport"), cv:document.getElementById("mapCanvas"), img:document.getElementById("mapImg"), hint:document.getElementById("mapHint") };
+  mapEls.img.src = CONFIG.mapImage;
+  mapEls.img.onload = function(){ mapEls.img.onload = null; fitMap(); };
+  mapEls.img.onerror = function(){
+    if(mapEls.img.src.indexOf(CONFIG.mapImageFallback) === -1){
+      mapEls.img.onerror = null;
+      mapEls.img.src = CONFIG.mapImageFallback;
+    }
+  };
+  bindMapEvents();
+  mapState.inited = true;
+}
+function fitMap(){
+  var vw = mapEls.vp.clientWidth, vh = mapEls.vp.clientHeight;
+  var s = Math.min(vw/mapState.imgW, vh/mapState.imgH);
+  mapState.s = s;
+  mapState.tx = (vw - mapState.imgW*s)/2;
+  mapState.ty = (vh - mapState.imgH*s)/2;
+  applyTransform();
+}
+function applyTransform(){
+  mapEls.cv.style.transform = "translate("+mapState.tx+"px,"+mapState.ty+"px) scale("+mapState.s+")";
+  mapEls.cv.style.width = mapState.imgW+"px";
+  mapEls.cv.style.height = mapState.imgH+"px";
+}
+function zoomBy(d, cx, cy){
+  var ns = Math.min(10, Math.max(0.4, mapState.s*d));
+  if(ns === mapState.s) return;
+  cx = cx == null ? mapEls.vp.clientWidth/2 : cx;
+  cy = cy == null ? mapEls.vp.clientHeight/2 : cy;
+  var px = (cx-mapState.tx)/mapState.s, py = (cy-mapState.ty)/mapState.s;
+  mapState.s = ns; mapState.tx = cx-px*ns; mapState.ty = cy-py*ns;
+  applyTransform();
+}
+function viewToPct(px, py){
+  var cx = (px-mapState.tx)/mapState.s, cy = (py-mapState.ty)/mapState.s;
+  return { x:Math.max(0,Math.min(100,cx/mapState.imgW*100)), y:Math.max(0,Math.min(100,cy/mapState.imgH*100)) };
+}
+
+/* ================= 点位渲染 ================= */
+function renderPois(){
+  var cv = mapEls.cv;
+  cv.querySelectorAll(".poi").forEach(function(n){ n.remove(); });
+  points.forEach(function(p, i){
+    var c = CATEGORIES[p.cat] || CATEGORIES.clinic;
+    var el = document.createElement("div");
+    el.className = "poi";
+    el.setAttribute("data-i", i);
+    el.style.left = p.x + "%";
+    el.style.top = p.y + "%";
+    el.innerHTML = '<span class="poi-dot" style="background:'+c.color+'">'+ICONS[c.icon]+'</span>';
+    el.addEventListener("click", function(e){
+      if(mapState.moved || dragPoint) return;
+      e.stopPropagation();
+      openEdit(i);
+    });
+    cv.appendChild(el);
+  });
+}
+
+/* ================= 统计 ================= */
+function renderStats(){
+  var html = "";
+  CAT_ORDER.forEach(function(k){
+    var c = CATEGORIES[k];
+    var n = points.filter(function(p){ return p.cat === k; }).length;
+    html += '<div class="stat"><span class="cdot" style="background:'+c.color+'"></span><b>'+n+'</b><span>'+c.name+'</span></div>';
+  });
+  html += '<div class="stat"><span class="cdot" style="background:#20312B"></span><b>'+points.length+'</b><span>全部</span></div>';
+  document.getElementById("stats").innerHTML = html;
+}
+
+/* ================= 商户列表 ================= */
+function renderList(){
+  var box = document.getElementById("merchantList");
+  if(points.length === 0){
+    box.innerHTML = '<div style="text-align:center;color:var(--ink-faint);font-size:13px;padding:40px 0">暂无商户，点击"在地图上添加商户"开始添加。</div>';
+    return;
+  }
+  box.innerHTML = points.map(function(p, i){
+    var c = CATEGORIES[p.cat] || CATEGORIES.clinic;
+    var catName = c.name;
+    return '<div class="mcard">'+
+      '<span class="m-ico" style="background:'+c.color+'">'+ICONS[c.icon]+'</span>'+
+      '<div class="m-main">'+
+        '<div class="m-name">'+esc(p.name)+' <span class="usr">'+catName+'</span></div>'+
+        '<div class="m-sub">'+esc(p.address||"")+' · '+(p.hours||"")+' · 位置 '+Math.round(p.x)+'%,'+Math.round(p.y)+'%</div>'+
+      '</div>'+
+      '<div class="m-ops">'+
+        '<button class="m-op" data-op="edit" data-i="'+i+'" aria-label="编辑">'+ICONS.edit+'</button>'+
+        '<button class="m-op del" data-op="del" data-i="'+i+'" aria-label="删除">'+ICONS.trash+'</button>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+  box.querySelectorAll(".m-op").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var i = +btn.getAttribute("data-i");
+      if(btn.getAttribute("data-op") === "edit"){ openEdit(i); }
+      else { doDelete(i); }
+    });
+  });
+}
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(m){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];
+  });
+}
+
+/* ================= 编辑表单 ================= */
+function fillCatSelect(){
+  var sel = document.getElementById("fCat");
+  sel.innerHTML = CAT_ORDER.map(function(k){
+    return '<option value="'+k+'">'+CATEGORIES[k].name+'</option>';
+  }).join("");
+}
+function openEdit(i){
+  editingIndex = i;
+  relocateMode = false;
+  document.getElementById("btnRelocate").classList.remove("on");
+  document.getElementById("btnRelocate").textContent = "重新定位";
+  var isNew = i === -1;
+  document.getElementById("editTitle").textContent = isNew ? "添加商户" : "编辑商户";
+  document.getElementById("btnDelete").style.display = isNew ? "none" : "block";
+  var p = isNew ? { cat:CAT_ORDER[0], x:50, y:50 } : points[i];
+  document.getElementById("fName").value = p.name || "";
+  document.getElementById("fCat").value = p.cat || CAT_ORDER[0];
+  document.getElementById("fHours").value = p.hours || "";
+  document.getElementById("fAddr").value = p.address || "";
+  document.getElementById("fTel").value = p.tel || "";
+  document.getElementById("fNote").value = p.note || "";
+  updateCoordText();
+  // 标记选中的点位
+  mapEls.cv.querySelectorAll(".poi").forEach(function(el){
+    el.classList.toggle("selected", +el.getAttribute("data-i") === i);
+  });
+  showSheet(document.getElementById("editSheet"));
+}
+function updateCoordText(){
+  var p = editingIndex === -1 ? { x:50, y:50 } : points[editingIndex];
+  if(editingIndex === -1 && typeof pendingNewXY === "object" && pendingNewXY){ p = pendingNewXY; }
+  document.getElementById("coordVal").textContent = "图上位置：x " + Math.round(p.x) + "% · y " + Math.round(p.y) + "%";
+}
+var pendingNewXY = null;
+
+function saveEdit(){
+  var name = document.getElementById("fName").value.trim();
+  if(!name){ document.getElementById("fName").focus(); return; }
+  var data = {
+    cat: document.getElementById("fCat").value,
+    name: name,
+    address: document.getElementById("fAddr").value.trim(),
+    tel: document.getElementById("fTel").value.trim(),
+    hours: document.getElementById("fHours").value.trim(),
+    note: document.getElementById("fNote").value.trim()
+  };
+  if(editingIndex === -1){
+    data.x = pendingNewXY ? pendingNewXY.x : 50;
+    data.y = pendingNewXY ? pendingNewXY.y : 50;
+    data.tag = "";
+    points.push(data);
+  } else {
+    data.x = points[editingIndex].x;
+    data.y = points[editingIndex].y;
+    data.tag = points[editingIndex].tag || "";
+    points[editingIndex] = data;
+  }
+  pendingNewXY = null;
+  saveData();
+  hideSheets();
+  renderPois();
+  renderList();
+}
+function doDelete(i){
+  if(!window.confirm("确定删除「" + points[i].name + "」吗？")) return;
+  points.splice(i, 1);
+  saveData();
+  hideSheets();
+  renderPois();
+  renderList();
+  editingIndex = -1;
+}
+document.getElementById("btnSave").addEventListener("click", saveEdit);
+document.getElementById("btnDelete").addEventListener("click", function(){
+  if(editingIndex >= 0) doDelete(editingIndex);
+});
+
+/* 重新定位 */
+document.getElementById("btnRelocate").addEventListener("click", function(){
+  if(!editingIndex === -1 && !pendingNewXY){ /* 新商户先给默认点 */ }
+  relocateMode = !relocateMode;
+  var b = document.getElementById("btnRelocate");
+  b.classList.toggle("on", relocateMode);
+  b.textContent = relocateMode ? "请在地图上点击新位置" : "重新定位";
+  if(relocateMode){
+    var tip = mapEls.hint;
+    tip.textContent = "定位模式：点击地图设置商户位置";
+    tip.classList.add("show");
+  } else {
+    mapEls.hint.classList.remove("show");
+  }
+});
+
+/* ================= 弹层 ================= */
+function showSheet(el){
+  document.getElementById("sheetMask").classList.add("show");
+  el.classList.add("show");
+}
+function hideSheets(){
+  document.getElementById("sheetMask").classList.remove("show");
+  document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("show"); });
+  relocateMode = false;
+  var b = document.getElementById("btnRelocate");
+  b.classList.remove("on"); b.textContent = "重新定位";
+  mapEls.hint.classList.remove("show");
+}
+document.getElementById("sheetMask").addEventListener("click", hideSheets);
+
+/* ================= 地图交互 ================= */
+function bindMapEvents(){
+  var vp = mapEls.vp;
+  var downPos = null, startT = null, moved = false;
+
+  vp.addEventListener("pointerdown", function(e){
+    var poiEl = e.target.closest(".poi");
+    if(poiEl){
+      // 拖动点位
+      if(!relocateMode){
+        dragPoint = { i:+poiEl.getAttribute("data-i"), el:poiEl };
+        poiEl.classList.add("dragging");
+      }
+      downPos = { x:e.clientX, y:e.clientY };
+      startT = { tx:mapState.tx, ty:mapState.ty };
+      moved = false; mapState.moved = false;
+      vp.setPointerCapture(e.pointerId);
+      return;
+    }
+    downPos = { x:e.clientX, y:e.clientY };
+    startT = { tx:mapState.tx, ty:mapState.ty };
+    moved = false; mapState.moved = false;
+    vp.setPointerCapture(e.pointerId);
+  });
+
+  vp.addEventListener("pointermove", function(e){
+    if(!downPos) return;
+    var dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
+    if(Math.abs(dx)+Math.abs(dy) > 4) moved = true;
+    if(dragPoint){
+      // 拖动点位：根据拖动增量换算百分比
+      var rect = vp.getBoundingClientRect();
+      var px = e.clientX - rect.left, py = e.clientY - rect.top;
+      var pct = viewToPct(px, py);
+      var p = points[dragPoint.i];
+      p.x = Math.round(pct.x*100)/100; p.y = Math.round(pct.y*100)/100;
+      dragPoint.el.style.left = p.x + "%";
+      dragPoint.el.style.top = p.y + "%";
+      return;
+    }
+    mapState.tx = startT.tx + dx;
+    mapState.ty = startT.ty + dy;
+    applyTransform();
+  });
+
+  vp.addEventListener("pointerup", function(e){
+    if(!downPos) return;
+    var dx = e.clientX - downPos.x, dy = e.clientY - downPos.y;
+    if(Math.abs(dx)+Math.abs(dy) > 6) mapState.moved = true;
+    var poiEl = e.target.closest(".poi");
+    if(dragPoint){
+      dragPoint.el.classList.remove("dragging");
+      var p = points[dragPoint.i];
+      saveData("已更新「"+p.name+"」位置");
+      dragPoint = null;
+    }
+    // 标注模式：点击空白添加
+    if(markMode && !moved && !poiEl && !relocateMode){
+      var rect = vp.getBoundingClientRect();
+      var pct = viewToPct(e.clientX-rect.left, e.clientY-rect.top);
+      pendingNewXY = { x:Math.round(pct.x*100)/100, y:Math.round(pct.y*100)/100 };
+      openEdit(-1);
+      mapEls.hint.classList.remove("show");
+    }
+    // 重新定位模式：点击设置新位置
+    if(relocateMode && !moved && editingIndex !== -1){
+      var rect2 = vp.getBoundingClientRect();
+      var pc2 = viewToPct(e.clientX-rect2.left, e.clientY-rect2.top);
+      if(editingIndex === -1){
+        pendingNewXY = { x:Math.round(pc2.x*100)/100, y:Math.round(pc2.y*100)/100 };
+      } else {
+        points[editingIndex].x = Math.round(pc2.x*100)/100;
+        points[editingIndex].y = Math.round(pc2.y*100)/100;
+        saveData();
+      }
+      relocateMode = false;
+      var b = document.getElementById("btnRelocate");
+      b.classList.remove("on"); b.textContent = "重新定位";
+      mapEls.hint.classList.remove("show");
+      updateCoordText();
+      renderPois();
+      // 重新标记选中
+      mapEls.cv.querySelectorAll(".poi").forEach(function(el){
+        el.classList.toggle("selected", +el.getAttribute("data-i") === editingIndex);
+      });
+    }
+    downPos = null;
+  });
+
+  vp.addEventListener("dblclick", function(e){
+    if(e.target.closest(".poi")) return;
+    var rect = vp.getBoundingClientRect();
+    zoomBy(1.6, e.clientX-rect.left, e.clientY-rect.top);
+  });
+  vp.addEventListener("touchmove", function(e){ e.preventDefault(); }, { passive:false });
+}
+
+/* ================= 工具按钮 ================= */
+document.getElementById("btnZi").addEventListener("click", function(){ zoomBy(1.3); });
+document.getElementById("btnZo").addEventListener("click", function(){ zoomBy(1/1.3); });
+document.getElementById("btnFit").addEventListener("click", fitMap);
+document.getElementById("btnMark").addEventListener("click", function(){
+  markMode = !markMode;
+  this.classList.toggle("on", markMode);
+  mapEls.hint.textContent = markMode ? "标注模式：点击地图添加商户" : "点击地图上的点位可编辑";
+  mapEls.hint.classList.toggle("show", markMode);
+});
+document.getElementById("btnAdd").addEventListener("click", function(){
+  pendingNewXY = { x:50, y:50 };
+  openEdit(-1);
+});
+document.getElementById("btnRelocate").textContent = "重新定位";
+
+/* ================= 数据导入导出 ================= */
+document.getElementById("btnExport").addEventListener("click", function(){
+  var box = document.getElementById("jsonBox");
+  box.value = JSON.stringify(points, null, 2);
+  box.scrollTop = 0;
+  box.focus(); box.select();
+  try{ document.execCommand("copy"); }catch(e){}
+  // 也用剪贴板 API 尝试
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(JSON.stringify(points)).then(function(){
+      document.getElementById("btnExport").textContent = "已复制";
+      setTimeout(function(){ document.getElementById("btnExport").textContent = "导出全部数据"; }, 1500);
+    });
+  }
+});
+document.getElementById("btnImportFrom").addEventListener("click", function(){
+  var box = document.getElementById("jsonBox");
+  var raw = box.value.trim();
+  if(!raw){ box.focus(); return; }
+  var arr;
+  try{ arr = JSON.parse(raw); }catch(e){
+    window.alert("JSON 格式不正确，请检查后重试。");
+    return;
+  }
+  if(!Array.isArray(arr) || arr.length === 0){
+    window.alert("数据格式应为数组，且至少包含一个商户。");
+    return;
+  }
+  var ok = true;
+  arr.forEach(function(p){
+    if(!p || !p.name || !p.cat || p.x == null || p.y == null) ok = false;
+  });
+  if(!ok){
+    window.alert("存在缺少必要字段（name/cat/x/y）的商户，导入已取消。");
+    return;
+  }
+  if(!window.confirm("导入将覆盖当前全部 " + points.length + " 个商户，确定继续？")) return;
+  points = arr.map(function(p){
+    return { cat:p.cat, name:p.name, tag:p.tag||"", x:+p.x, y:+p.y, address:p.address||"", tel:p.tel||"", hours:p.hours||"", note:p.note||"" };
+  });
+  saveData("导入完成，共 " + points.length + " 个商户");
+  renderPois(); renderList();
+  hideSheets();
+});
+
+/* ================= 面板切换 ================= */
+document.getElementById("tabList").addEventListener("click", function(){
+  this.classList.add("on");
+  document.getElementById("tabData").classList.remove("on");
+  document.getElementById("listPanel").style.display = "block";
+  document.getElementById("dataPanel").classList.remove("show");
+});
+document.getElementById("tabData").addEventListener("click", function(){
+  this.classList.add("on");
+  document.getElementById("tabList").classList.remove("on");
+  document.getElementById("listPanel").style.display = "none";
+  document.getElementById("dataPanel").classList.add("show");
+  document.getElementById("jsonBox").value = JSON.stringify(points, null, 2);
+});
+
+/* ================= 初始化 ================= */
+function initApp(){
+  loadData();
+  fillCatSelect();
+  renderStats();
+  renderList();
+  initMap();
+  requestAnimationFrame(function(){ renderPois(); });
+}
+</script>
+</body>
+</html>

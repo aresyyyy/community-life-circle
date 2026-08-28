@@ -364,10 +364,10 @@ var CONFIG = {
   communityName: "XX社区便民生活圈",   // 改成你社区的实际名称
   hotline: "12345678",                 // 社区服务热线
   /* 社区总平面图：
-     优先使用与页面同目录的 map.webp（把地图图片和 index.html 一起上传到托管平台即可）；
-     若找不到则自动回退到下方 CDN 备用地址。 */
-  mapImage: "./map.webp",
-  mapImageFallback: "https://aka.doubaocdn.com/s/5FziFU75zo",
+     底图依次尝试下方候选（png 全兼容最清晰 / jpg 加载快 / webp 体积小 / 最后回退 CDN）。
+     老手机浏览器不支持 WebP，所以默认用 png。 */
+  mapImage: "./map.png",
+  mapCandidates: ["./map.png","./map.jpg","./map.webp","https://aka.doubaocdn.com/s/5FziFU75zo"],
   dataUpdated: "2026-08",
   /* 管理口令：普通居民只读，双击顶部社区名称输入此口令后可进入管理模式（编辑点位）。
      上线前请务必改成你自己的口令。 */
@@ -562,20 +562,18 @@ function initMapView(){
     tip: document.getElementById("mapTip")
   };
   if(!mapEls.img.getAttribute("src")){
-    mapEls.img.src = CONFIG.mapImage;
-    mapEls.img.onload = function(){ mapEls.img.onload = null; fitMap(); };
-    mapEls.img.onerror = function(){
-      // 相对路径未找到（如 CDN 演示环境）时，回退到 CDN 备用地址
-      if(mapEls.img.src.indexOf(CONFIG.mapImageFallback) === -1){
-        mapEls.img.onerror = null;
-        mapEls.img.src = CONFIG.mapImageFallback;
-      }
-    };
+    tryMapCandidate(0);
   } else {
     requestAnimationFrame(fitMap);
   }
   bindMapEvents();
   mapState.inited = true;
+}
+function tryMapCandidate(idx){
+  if(idx >= CONFIG.mapCandidates.length) return;
+  mapEls.img.onload = function(){ mapEls.img.onload = null; fitMap(); };
+  mapEls.img.onerror = function(){ mapEls.img.onerror = null; tryMapCandidate(idx+1); };
+  mapEls.img.src = CONFIG.mapCandidates[idx];
 }
 
 function fitMap(){

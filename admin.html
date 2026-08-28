@@ -248,8 +248,8 @@
 var CONFIG = {
   communityName: "XX社区便民生活圈",
   adminPassword: "123456",        // 管理口令（上线前请修改）
-  mapImage: "./map.webp",
-  mapImageFallback: "https://aka.doubaocdn.com/s/5FziFU75zo"
+  mapImage: "./map.png",
+  mapCandidates: ["./map.png","./map.jpg","./map.webp","https://aka.doubaocdn.com/s/5FziFU75zo"]
 };
 
 /* ================= 分类配置 ================= */
@@ -346,14 +346,14 @@ document.getElementById("btnLogout").addEventListener("click", function(){
 var mapEls = null;
 function initMap(){
   mapEls = { vp:document.getElementById("mapViewport"), cv:document.getElementById("mapCanvas"), img:document.getElementById("mapImg"), hint:document.getElementById("mapHint") };
-  mapEls.img.src = CONFIG.mapImage;
-  mapEls.img.onload = function(){ mapEls.img.onload = null; fitMap(); };
-  mapEls.img.onerror = function(){
-    if(mapEls.img.src.indexOf(CONFIG.mapImageFallback) === -1){
-      mapEls.img.onerror = null;
-      mapEls.img.src = CONFIG.mapImageFallback;
-    }
-  };
+  if(!mapEls.img.getAttribute("src")){ tryMapCandidate(0); }
+  else { requestAnimationFrame(fitMap); }
+  function tryMapCandidate(idx){
+    if(idx >= CONFIG.mapCandidates.length) return;
+    mapEls.img.onload = function(){ mapEls.img.onload = null; fitMap(); };
+    mapEls.img.onerror = function(){ mapEls.img.onerror = null; tryMapCandidate(idx+1); };
+    mapEls.img.src = CONFIG.mapCandidates[idx];
+  }
   bindMapEvents();
   mapState.inited = true;
 }

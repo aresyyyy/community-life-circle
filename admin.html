@@ -536,12 +536,16 @@ document.getElementById("btnDelete").addEventListener("click", function(){
 
 /* 重新定位 */
 document.getElementById("btnRelocate").addEventListener("click", function(){
-  if(!editingIndex === -1 && !pendingNewXY){ /* 新商户先给默认点 */ }
   relocateMode = !relocateMode;
   var b = document.getElementById("btnRelocate");
   b.classList.toggle("on", relocateMode);
   b.textContent = relocateMode ? "请在地图上点击新位置" : "重新定位";
   if(relocateMode){
+    hideSheets();   // 关闭表单露出地图（hideSheets 会重置 relocateMode，需重新设置）
+    relocateMode = true;
+    var b2 = document.getElementById("btnRelocate");
+    b2.classList.add("on");
+    b2.textContent = "请在地图上点击新位置";
     var tip = mapEls.hint;
     tip.textContent = "定位模式：点击地图设置商户位置";
     tip.classList.add("show");
@@ -630,11 +634,12 @@ function bindMapEvents(){
       mapEls.hint.classList.remove("show");
     }
     // 重新定位模式：点击设置新位置
-    if(relocateMode && !moved && editingIndex !== -1){
+    if(relocateMode && !moved && (editingIndex !== -1 || pendingNewXY)){
       var rect2 = vp.getBoundingClientRect();
       var pc2 = viewToPct(e.clientX-rect2.left, e.clientY-rect2.top);
       if(editingIndex === -1){
         pendingNewXY = { x:Math.round(pc2.x*100)/100, y:Math.round(pc2.y*100)/100 };
+        openEdit(-1);   // 新增商户重新定位后，重新打开表单显示新坐标
       } else {
         points[editingIndex].x = Math.round(pc2.x*100)/100;
         points[editingIndex].y = Math.round(pc2.y*100)/100;

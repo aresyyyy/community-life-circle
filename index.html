@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1F7A5C">
+  <!-- 防缓存：尽量让浏览器/微信每次扫码都获取最新页面，避免显示旧标题旧数据 -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 <title>高阳小区便民生活圈</title>
 <style>
   :root{
@@ -1111,6 +1115,27 @@ initAdmin();
 renderHome();
 renderChips();
 loadExternalData();
+/* 版本自检：避免扫码命中浏览器缓存的旧页面。若线上 version.json 版本号与上次不同，自动刷新一次拿最新页面 */
+(function(){
+  var RELOAD_KEY = "lfq_ver_seen";
+  function checkVersion(){
+    fetch("version.json", { cache:"no-store" })
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(d){
+        if(!d || !d.v) return;
+        var last = null;
+        try{ last = localStorage.getItem(RELOAD_KEY); }catch(e){}
+        if(last && last !== d.v){
+          try{ localStorage.setItem(RELOAD_KEY, d.v); }catch(e){}
+          location.reload();
+        } else {
+          try{ localStorage.setItem(RELOAD_KEY, d.v); }catch(e){}
+        }
+      })
+      .catch(function(){});
+  }
+  setTimeout(checkVersion, 300);
+})();
 /* 预加载地图底图：提前缓存，进入地图页时更快显示 */
 var _preMap = new Image(); _preMap.src = CONFIG.mapImage;
 if(!location.hash){ location.hash = "#/home"; }

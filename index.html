@@ -464,39 +464,62 @@ function allPoints(){
 /* 若配置了外部数据源，加载管理员维护的最新商户数据 */
 var EXTERNAL_POINTS = null;
 var EXTERNAL_POINTS_N = 0;
+var DATA_CACHE_KEY = "lfq_points_cache_v1";
+function normP(p){
+  return { cat:p.cat, name:p.name, tag:p.tag||"", x:+p.x, y:+p.y, address:p.address||"", tel:p.tel||"", hours:p.hours||"", note:p.note||"" };
+}
 function loadExternalData(){
   var urls = (CONFIG.dataSources && CONFIG.dataSources.length) ? CONFIG.dataSources
             : (CONFIG.externalDataUrl ? [CONFIG.externalDataUrl] : []);
-  if(!urls.length) return;
-  var idx = 0;
+  if(!urls.length){ renderHome(); return; }
   function setTip(txt){
     var el = document.getElementById("dataSrcTip");
     if(el){ el.textContent = txt; el.style.display = "inline"; }
   }
-  function onLoaded(arr){
-    EXTERNAL_POINTS = arr.map(function(p){
-      return { cat:p.cat, name:p.name, tag:p.tag||"", x:+p.x, y:+p.y, address:p.address||"", tel:p.tel||"", hours:p.hours||"", note:p.note||"" };
-    });
+  function applyData(arr, cacheIt){
+    EXTERNAL_POINTS = arr.map(normP);
     EXTERNAL_POINTS_N = arr.length;
     CONFIG.dataUpdated = "线上实时同步";
+    if(cacheIt){ try{ localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(EXTERNAL_POINTS)); }catch(e){} }
     renderHome(); renderChips(); renderPois(); renderMapList();
+  }
+  /* 1) 秒开：先用上次成功加载并缓存的本地数据立即渲染，不等网络 */
+  var cached = null;
+  try{ cached = localStorage.getItem(DATA_CACHE_KEY); }catch(e){}
+  if(cached){
+    try{
+      var ca = JSON.parse(cached);
+      if(Array.isArray(ca) && ca.length){
+        EXTERNAL_POINTS = ca.map(normP);
+        EXTERNAL_POINTS_N = ca.length;
+        renderHome(); renderChips(); renderPois(); renderMapList();
+      }
+    }catch(e){}
+  }
+  /* 2) 并行请求所有数据源，谁先成功用谁（jsDelivr 快、raw 实时，互不阻塞） */
+  var done = false, failed = 0;
+  function finish(arr){
+    if(done) return; done = true;
+    applyData(arr, true);
     setTip("（已同步线上最新数据 " + arr.length + " 家）");
   }
-  function onFail(){
-    /* 全部数据源失败：明确提示，不显示任何假数据 */
-    setTip("（线上数据加载失败，请下拉刷新重试）");
+  function failAll(){
+    if(done) return; done = true;
+    if(EXTERNAL_POINTS_N > 0){ setTip("（线上刷新失败，当前显示上次数据）"); }
+    else { setTip("（线上数据加载失败，请下拉刷新重试）"); }
     renderHome(); renderChips(); renderPois(); renderMapList();
   }
-  function tryNext(){
-    if(idx >= urls.length){ onFail(); return; }
-    var u = urls[idx++];
-    /* cache:no-store 确保每次扫码都获取 data.json 最新内容 */
+  function oneResult(){ failed++; if(failed >= urls.length){ failAll(); } }
+  urls.forEach(function(u){
+    var timer = setTimeout(oneResult, 6000);   /* 单个源最多等 6 秒 */
     fetch(u, { cache:"no-store" })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(arr){ if(Array.isArray(arr) && arr.length){ onLoaded(arr); } else { tryNext(); } })
-      .catch(tryNext);
-  }
-  tryNext();
+      .then(function(arr){
+        clearTimeout(timer);
+        if(Array.isArray(arr) && arr.length){ finish(arr); } else { oneResult(); }
+      })
+      .catch(function(){ clearTimeout(timer); oneResult(); });
+  });
 }
 
 /* ================= 管理模式（居民只读） ================= */
@@ -539,12 +562,15 @@ function initAdmin(){
 function renderHome(){
   document.getElementById("communityName").textContent = CONFIG.communityName;
   var grid = document.getElementById("catGrid");
+  /* 数据尚未加载且无本地缓存时，分类数量显示"…"表示加载中 */
+  var loading = (EXTERNAL_POINTS_N === 0 && CONFIG.dataSources && CONFIG.dataSources.length);
   grid.innerHTML = CAT_ORDER.map(function(key){
     var c = CATEGORIES[key];
     var n = allPoints().filter(function(p){ return p.cat === key; }).length;
+    var cnt = loading ? '<span class="cat-count">…</span>' : '<span class="cat-count">'+n+'家</span>';
     return '<button class="cat-btn" data-key="'+key+'">'+
       '<span class="cat-ico" style="background:'+c.color+'22;color:'+c.color+'">'+ICONS[c.icon]+'</span>'+
-      '<span>'+c.name+'</span><span class="cat-count">'+n+'家</span></button>';
+      '<span>'+c.name+'</span>'+cnt+'</button>';
   }).join("");
 }
 

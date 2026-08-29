@@ -199,6 +199,16 @@
       </div>
 
       <div class="data-panel" id="dataPanel">
+        <button class="add-btn" id="btnPublish">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          发布到线上（居民端可见）
+        </button>
+        <div class="form-group"><label>GitHub 访问令牌（发布用，仅存本机）</label>
+          <input type="password" id="ghToken" placeholder="粘贴 GitHub 访问令牌（需 Contents 写权限）" autocomplete="off">
+        </div>
+        <div class="data-tip" style="margin-bottom:12px">
+          令牌生成：GitHub → Settings → Developer settings → Personal access tokens → 新建 Fine-grained token，仅勾选本仓库的 <b>Contents</b> 读写权限。令牌只保存在本机浏览器，不会上传到代码。
+        </div>
         <div class="data-actions">
           <button class="dbtn" id="btnExport">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -217,10 +227,9 @@
           <textarea id="jsonBox" placeholder='粘贴或导出的 JSON 数据，格式示例：[{"cat":"clinic","name":"名称","x":50,"y":50,"address":"地址","tel":"电话","hours":"时间","note":"备注"}]'></textarea>
         </div>
         <div class="data-tip">
-          1. 在管理员版中增删改后，点击"导出全部数据"复制 JSON。<br>
-          2. 打开 GitHub 仓库，编辑 <b>data.json</b>，粘贴覆盖后保存。约 1 分钟后，居民扫码即可看到最新内容（无需换二维码）。<br>
-          3. 若你或其他电脑想同步线上最新数据，点"从线上 data.json 拉取"，会<b>覆盖</b>本机数据。<br>
-          4. "导入数据"会<b>覆盖</b>当前全部点位，请先导出备份。
+          1. 增删改商户后，点上方"发布到线上"即可一键更新 GitHub 的 <b>data.json</b>，居民端约 1 分钟看到最新内容（无需换二维码）。<br>
+          2. "导出全部数据"可复制 JSON 手动备份；"导入数据"会<b>覆盖</b>当前全部点位。<br>
+          3. 若其他电脑要同步线上最新数据，点"从线上 data.json 拉取"，会<b>覆盖</b>本机数据。
         </div>
       </div>
     </div>
@@ -277,20 +286,8 @@ var CATEGORIES = {
 };
 var CAT_ORDER = ["party","school","charge","supermarket","express","clinic","bus","toilet","bank","square"];
 
-/* 初始示例数据（居民版同源，可导入导出维护） */
-var INITIAL_POINTS = [
-  { cat:"party", name:"XX社区党群服务中心", tag:"党群服务", x:50, y:38, address:"社区主路东侧中心位置", tel:"0375-1234001", hours:"周一至周五 8:30-18:00", note:"党务政务、便民服务、议事活动" },
-  { cat:"school", name:"育才小学", tag:"公办小学", x:34, y:72, address:"文化路26号", tel:"0375-1234002", hours:"周一至周五 7:30-17:30", note:"义务教育阶段学校" },
-  { cat:"charge", name:"社区充电站", tag:"电动车充电", x:72, y:58, address:"社区西门停车场", tel:"", hours:"24小时", note:"电动自行车充电桩，扫码充电" },
-  { cat:"supermarket", name:"好邻居超市", tag:"生鲜便利", x:24, y:24, address:"建设路8号", tel:"0375-1234004", hours:"每日 7:00-22:00", note:"果蔬生鲜、日用百货" },
-  { cat:"express", name:"便民快递驿站", tag:"快递驿站", x:76, y:18, address:"社区北门西侧", tel:"0375-1234005", hours:"每日 9:00-20:00", note:"代收代寄快递包裹" },
-  { cat:"clinic", name:"社区卫生服务站", tag:"医保定点", x:56, y:14, address:"社区服务中心一楼东侧", tel:"0375-1234006", hours:"周一至周日 8:00-20:00", note:"常见病诊疗、慢病随访" },
-  { cat:"bus", name:"社区南门公交站", tag:"公交站点", x:16, y:62, address:"社区南门出口", tel:"", hours:"", note:"公交线路 11路、21路" },
-  { cat:"toilet", name:"中心广场公厕", tag:"公共卫生间", x:46, y:64, address:"中心广场西北角", tel:"", hours:"24小时开放", note:"配有第三卫生间" },
-  { cat:"bank", name:"农商银行社区支行", tag:"银行网点", x:66, y:70, address:"迎宾路18号", tel:"0375-1234009", hours:"周一至周五 9:00-17:00", note:"存取款、开卡、自助设备" },
-  { cat:"square", name:"中心休闲广场", tag:"公共空间", x:50, y:52, address:"社区中心位置", tel:"", hours:"全天开放", note:"健身器材、休闲座椅、活动场地" },
-  { cat:"party", name:"高阳社区", tag:"", x:39.68, y:59.26, address:"幼儿园对面", tel:"1234567", hours:"", note:"" },
-];
+/* 内置示例数据已清空：首次打开（无本地缓存）时显示空列表，避免误导用户。真实数据从线上 data.json 拉取或导入。 */
+var INITIAL_POINTS = [];
 
 /* ================= SVG 图标 ================= */
 var ICONS = {
@@ -699,6 +696,55 @@ document.getElementById("btnMark").addEventListener("click", function(){ setMark
 document.getElementById("btnAdd").addEventListener("click", function(){ setMarkMode(true); });
 document.getElementById("btnRelocate").textContent = "重新定位";
 
+/* ================= 一键发布到线上 ================= */
+var GITHUB_TOKEN_KEY = "lfq_github_token_v1";
+function getGhToken(){ try{ return localStorage.getItem(GITHUB_TOKEN_KEY) || ""; }catch(e){ return ""; } }
+function saveGhToken(t){ try{ localStorage.setItem(GITHUB_TOKEN_KEY, t); }catch(e){} }
+/* 从 externalDataUrl 解析发布目标 {owner, repo, branch, path}，保证与居民端读取地址一致 */
+function parseGithubTarget(){
+  var m = (CONFIG.externalDataUrl || "").match(/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/([^\/]+)\/(.+)$/);
+  if(!m) return null;
+  return { owner:m[1], repo:m[2], branch:m[3], path:m[4] };
+}
+function utf8ToBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+function publishToGithub(){
+  var btn = document.getElementById("btnPublish");
+  var token = document.getElementById("ghToken").value.trim() || getGhToken();
+  if(!token){
+    window.alert("请先填写 GitHub 访问令牌（需本仓库 Contents 写权限）。\n令牌生成方法见输入框上方说明。");
+    document.getElementById("ghToken").focus();
+    return;
+  }
+  saveGhToken(token);
+  var tgt = parseGithubTarget();
+  if(!tgt){ window.alert("无法解析发布地址，请检查 CONFIG.externalDataUrl。"); return; }
+  if(!window.confirm("确定把当前 " + points.length + " 个商户发布到线上？\n发布后居民端约 1 分钟即可看到最新数据。")) return;
+  btn.textContent = "正在发布…";
+  btn.disabled = true;
+  var api = "https://api.github.com/repos/" + tgt.owner + "/" + tgt.repo + "/contents/" + tgt.path;
+  var headers = { "Authorization": "token " + token, "Accept": "application/vnd.github+json" };
+  function reset(){ btn.textContent = "发布到线上（居民端可见）"; btn.disabled = false; }
+  /* 1) 先取线上 data.json 的 sha，用于增量提交，避免覆盖他人改动 */
+  fetch(api + "?ref=" + encodeURIComponent(tgt.branch), { headers: headers, cache: "no-store" })
+    .then(function(r){ if(!r.ok) throw new Error("读取线上文件失败 HTTP " + r.status + "（请检查令牌是否有效）"); return r.json(); })
+    .then(function(info){
+      var body = { message: "更新商户数据", content: utf8ToBase64(JSON.stringify(points, null, 2)), sha: info.sha, branch: tgt.branch };
+      return fetch(api, { method:"PUT", headers: Object.assign({ "Content-Type":"application/json" }, headers), body: JSON.stringify(body) })
+        .then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.message || ("HTTP " + r.status)); return j; }); });
+    })
+    .then(function(){
+      btn.textContent = "已发布 ✓";
+      window.alert("发布成功！居民端约 1 分钟即可看到最新数据。");
+      setTimeout(reset, 2500);
+    })
+    .catch(function(e){
+      reset();
+      window.alert("发布失败：" + e.message + "\n\n常见原因：1. 令牌无 Contents 写权限；2. 令牌过期/被撤销；3. 网络问题。");
+    });
+}
+document.getElementById("btnPublish").addEventListener("click", publishToGithub);
+document.getElementById("ghToken").addEventListener("change", function(){ var v = this.value.trim(); if(v) saveGhToken(v); });
+
 /* ================= 数据导入导出 ================= */
 document.getElementById("btnExport").addEventListener("click", function(){
   var box = document.getElementById("jsonBox");
@@ -787,6 +833,7 @@ function initApp(){
   renderList();
   initMap();
   requestAnimationFrame(function(){ renderPois(); });
+  try{ var t = getGhToken(); if(t) document.getElementById("ghToken").value = t; }catch(e){}
 }
 </script>
 </body>

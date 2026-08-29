@@ -482,22 +482,17 @@ function loadExternalData(){
     if(cacheIt){ try{ localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(EXTERNAL_POINTS)); }catch(e){} }
     renderHome(); renderChips(); renderPois(); renderMapList();
   }
-  /* 1) 秒开：先用上次成功加载并缓存的本地数据立即渲染，不等网络 */
-  var cached = null;
-  try{ cached = localStorage.getItem(DATA_CACHE_KEY); }catch(e){}
-  if(cached){
-    try{
-      var ca = JSON.parse(cached);
-      if(Array.isArray(ca) && ca.length){
-        EXTERNAL_POINTS = ca.map(normP);
-        EXTERNAL_POINTS_N = ca.length;
-        setTip("（正在获取线上最新数据…）");
-        renderHome(); renderChips(); renderPois(); renderMapList();
-      }
-    }catch(e){}
+  /* 1) 始终从线上 data.json 拉取最新数据（不先显示本地旧缓存，保证与线上一致）。
+        本地缓存仅在线上拉取失败时作为兜底，避免误导。 */
+  var done = false, failed = 0, savedCache = null;
+  try{ savedCache = localStorage.getItem(DATA_CACHE_KEY); }catch(e){}
+  function applyData(arr, cacheIt){
+    EXTERNAL_POINTS = arr.map(normP);
+    EXTERNAL_POINTS_N = arr.length;
+    CONFIG.dataUpdated = "线上实时同步";
+    if(cacheIt){ try{ localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(EXTERNAL_POINTS)); }catch(e){} }
+    renderHome(); renderChips(); renderPois(); renderMapList();
   }
-  /* 2) 并行请求所有数据源，谁先成功用谁（jsDelivr 快、raw 实时，互不阻塞） */
-  var done = false, failed = 0;
   function finish(arr){
     if(done) return; done = true;
     applyData(arr, true);
@@ -505,9 +500,18 @@ function loadExternalData(){
   }
   function failAll(){
     if(done) return; done = true;
-    if(EXTERNAL_POINTS_N > 0){ setTip("（线上刷新失败，当前显示上次数据）"); }
-    else { setTip("（线上数据加载失败，请下拉刷新重试）"); }
-    renderHome(); renderChips(); renderPois(); renderMapList();
+    /* 线上失败：用本地缓存兜底（如有），并明确提示 */
+    var ca = null;
+    if(savedCache){ try{ var t = JSON.parse(savedCache); if(Array.isArray(t) && t.length){ ca = t; } }catch(e){} }
+    if(ca){
+      EXTERNAL_POINTS = ca.map(normP);
+      EXTERNAL_POINTS_N = ca.length;
+      setTip("（线上加载失败，当前显示上次数据）");
+      renderHome(); renderChips(); renderPois(); renderMapList();
+    } else {
+      setTip("（线上数据加载失败，请检查网络后重试）");
+      renderHome(); renderChips(); renderPois(); renderMapList();
+    }
   }
   function oneResult(){ failed++; if(failed >= urls.length){ failAll(); } }
   urls.forEach(function(u){

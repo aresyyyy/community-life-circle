@@ -393,8 +393,7 @@ var CONFIG = {
      - 第二个：jsDelivr CDN（稳定、加载快，但改 data.json 后可能有几分钟缓存延迟）
      若全部失败，页面会显示"数据加载失败"提示，不会显示任何假数据。 */
   dataSources: [
-    "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json",
-    "https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@main/data.json"
+    "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json"
   ],
   externalDataUrl: "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json"
 };
@@ -492,6 +491,7 @@ function loadExternalData(){
       if(Array.isArray(ca) && ca.length){
         EXTERNAL_POINTS = ca.map(normP);
         EXTERNAL_POINTS_N = ca.length;
+        setTip("（正在获取线上最新数据…）");
         renderHome(); renderChips(); renderPois(); renderMapList();
       }
     }catch(e){}

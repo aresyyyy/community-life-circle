@@ -393,7 +393,8 @@ var CONFIG = {
      - 第二个：jsDelivr CDN（稳定、加载快，但改 data.json 后可能有几分钟缓存延迟）
      若全部失败，页面会显示"数据加载失败"提示，不会显示任何假数据。 */
   dataSources: [
-    "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json"
+    "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json",
+    "https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@main/data.json"
   ],
   externalDataUrl: "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json"
 };
@@ -516,7 +517,8 @@ function loadExternalData(){
   function oneResult(){ failed++; if(failed >= urls.length){ failAll(); } }
   urls.forEach(function(u){
     var timer = setTimeout(oneResult, 6000);   /* 单个源最多等 6 秒 */
-    fetch(u, { cache:"no-store" })
+    var cbUrl = u + (u.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now();
+    fetch(cbUrl, { cache:"no-store" })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(arr){
         clearTimeout(timer);
@@ -1149,7 +1151,7 @@ loadExternalData();
 (function(){
   var RELOAD_KEY = "lfq_ver_seen";
   function checkVersion(){
-    fetch("version.json", { cache:"no-store" })
+    fetch("version.json?cb=" + Date.now(), { cache:"no-store" })
       .then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(d){
         if(!d || !d.v) return;
@@ -1157,7 +1159,7 @@ loadExternalData();
         try{ last = localStorage.getItem(RELOAD_KEY); }catch(e){}
         if(last && last !== d.v){
           try{ localStorage.setItem(RELOAD_KEY, d.v); }catch(e){}
-          location.reload();
+          location.replace(location.pathname + "?v=" + d.v + location.hash);
         } else {
           try{ localStorage.setItem(RELOAD_KEY, d.v); }catch(e){}
         }

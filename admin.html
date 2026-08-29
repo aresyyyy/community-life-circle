@@ -812,7 +812,8 @@ document.getElementById("btnImportFrom").addEventListener("click", function(){
 document.getElementById("btnPullData").addEventListener("click", function(){
   var btn = this, oldText = btn.innerHTML;
   btn.textContent = "正在拉取…";
-  fetch(CONFIG.externalDataUrl, { cache:"no-store" })
+  var cbUrl = CONFIG.externalDataUrl + (CONFIG.externalDataUrl.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now();
+  fetch(cbUrl, { cache:"no-store" })
     .then(function(r){ if(!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
     .then(function(arr){
       if(!Array.isArray(arr) || !arr.length) throw new Error("线上数据为空");
@@ -844,6 +845,37 @@ document.getElementById("tabData").addEventListener("click", function(){
   document.getElementById("jsonBox").value = JSON.stringify(points, null, 2);
 });
 
+/* 启动自动校验：线上与本机不一致时提示是否拉取线上最新，避免基于旧数据覆盖线上 */
+function samePoints(a, b){
+  function sig(list){
+    return (list||[]).map(function(p){
+      return [p.cat, p.name, +p.x, +p.y, p.tag||"", p.address||"", p.tel||"", p.hours||"", p.note||""].join("|");
+    }).sort().join("\n");
+  }
+  return sig(a) === sig(b);
+}
+function checkOnlineDrift(){
+  var url = CONFIG.externalDataUrl || "";
+  if(!url) return;
+  var cbUrl = url + (url.indexOf("?") >= 0 ? "&" : "?") + "cb=" + Date.now();
+  var timer = setTimeout(function(){}, 6000);   /* 超时静默跳过 */
+  fetch(cbUrl, { cache:"no-store" })
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(arr){
+      clearTimeout(timer);
+      if(!Array.isArray(arr) || !arr.length) return;
+      if(samePoints(arr, points)) return;
+      if(window.confirm("检测到线上与本机数据不一致：\n线上 " + arr.length + " 条，本机 " + points.length + " 条。\n\n是否拉取线上最新数据？\n（确定 = 用线上覆盖本机，取消 = 保留本机）")){
+        points = arr.map(function(p){
+          return { cat:p.cat, name:p.name, tag:p.tag||"", x:+p.x, y:+p.y, address:p.address||"", tel:p.tel||"", hours:p.hours||"", note:p.note||"" };
+        });
+        saveData("已同步线上 " + points.length + " 条");
+        renderPois(); renderList();
+      }
+    })
+    .catch(function(){ clearTimeout(timer); /* 网络失败静默 */ });
+}
+
 /* ================= 初始化 ================= */
 function initApp(){
   loadData();
@@ -853,6 +885,7 @@ function initApp(){
   initMap();
   requestAnimationFrame(function(){ renderPois(); });
   try{ var t = getGhToken(); if(t) document.getElementById("ghToken").value = t; }catch(e){}
+  checkOnlineDrift();
 }
 </script>
 </body>

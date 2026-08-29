@@ -1,90 +1,35 @@
 [
   {
     "cat": "party",
-    "name": "111",
-    "tag": "",
-    "x": 72.35,
-    "y": 59.38,
-    "address": "",
+    "name": "高阳社区",
+    "address": "平东幼儿园南边",
     "tel": "",
-    "hours": "",
-    "note": ""
+    "hours": "上午8:00-12:00  下午3:00-6:00",
+    "note": "",
+    "x": 39.51,
+    "y": 60.18,
+    "tag": ""
   },
   {
-    "cat": "party",
-    "name": "12312312",
-    "tag": "",
-    "x": 56.66,
-    "y": 41.73,
-    "address": "",
-    "tel": "",
-    "hours": "",
-    "note": ""
-  },
-  {
-    "cat": "charge",
-    "name": "发AF安抚F·",
-    "tag": "",
-    "x": 94.19,
-    "y": 40.02,
-    "address": "",
-    "tel": "",
-    "hours": "",
-    "note": ""
-  },
-  {
-    "cat": "party",
-    "name": "你好",
-    "tag": "",
-    "x": 47.33,
-    "y": 68.45,
-    "address": "",
-    "tel": "",
-    "hours": "",
-    "note": ""
-  },
-  {
-    "cat": "party",
-    "name": "手动阀手动阀手动阀手动阀撒旦",
-    "tag": "",
-    "x": 26.28,
-    "y": 65.7,
-    "address": "",
-    "tel": "",
-    "hours": "",
-    "note": ""
-  },
-  {
-    "cat": "party",
-    "name": "而该活动的555555555",
-    "tag": "",
-    "x": 38.55,
-    "y": 66.1,
-    "address": "",
-    "tel": "",
-    "hours": "",
-    "note": ""
-  },
-  {
-    "cat": "party",
-    "name": "585khjkjhk",
-    "tag": "",
-    "x": 44.13,
-    "y": 82.96,
-    "address": "",
-    "tel": "",
-    "hours": "",
-    "note": ""
-  },
-  {
-    "cat": "party",
-    "name": "斤斤计较经济界急急急急急急急急急急急急",
+    "cat": "bank",
+    "name": "李若涵",
     "address": "",
     "tel": "",
     "hours": "",
     "note": "",
-    "x": 47.73,
-    "y": 72.76,
+    "x": 41.23,
+    "y": 66.69,
+    "tag": ""
+  },
+  {
+    "cat": "party",
+    "name": "刘平平",
+    "address": "",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 46.65,
+    "y": 59.85,
     "tag": ""
   }
 ]

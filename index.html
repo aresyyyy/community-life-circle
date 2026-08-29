@@ -388,15 +388,12 @@ var CONFIG = {
   /* 管理口令：普通居民只读，双击顶部社区名称输入此口令后可进入管理模式（编辑点位）。
      上线前请务必改成你自己的口令。 */
   adminPassword: "123456",
-  /* 外部数据源（商户数据）：按顺序依次尝试加载，取第一个成功的。
-     - 第一个：GitHub raw（实时更新，改 data.json 后立即可见，但国内偶发慢/失败）
-     - 第二个：jsDelivr CDN（稳定、加载快，但改 data.json 后可能有几分钟缓存延迟）
-     若全部失败，页面会显示"数据加载失败"提示，不会显示任何假数据。 */
+  /* 外部数据源（商户数据）：读取项目内 data.json（与页面同域部署，页面与数据同步更新，一致性最好）。
+     若加载失败，页面会显示"数据加载失败"提示，不会显示任何假数据。 */
   dataSources: [
-    "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json",
-    "https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@main/data.json"
+    "data.json"
   ],
-  externalDataUrl: "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json"
+  externalDataUrl: "data.json"
 };
 
 /*

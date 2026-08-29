@@ -383,7 +383,7 @@ var CONFIG = {
      底图依次尝试下方候选（png 全兼容最清晰 / jpg 加载快 / webp 体积小 / 最后回退 CDN）。
      老手机浏览器不支持 WebP，所以默认用 png。 */
   mapImage: "./map-opt.jpg",
-  mapCandidates: ["./map-opt.jpg","https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@feature/liukai/main-2026-08-29/map-opt.jpg","./map.webp","./map.png","https://aka.doubaocdn.com/s/5FziFU75zo"],
+  mapCandidates: ["./map-opt.jpg","https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@main/map-opt.jpg","./map.webp","./map.png","https://aka.doubaocdn.com/s/5FziFU75zo"],
   dataUpdated: "2026-08",
   /* 管理口令：普通居民只读，双击顶部社区名称输入此口令后可进入管理模式（编辑点位）。
      上线前请务必改成你自己的口令。 */
@@ -393,10 +393,10 @@ var CONFIG = {
      - 第二个：jsDelivr CDN（稳定、加载快，但改 data.json 后可能有几分钟缓存延迟）
      若全部失败，页面会显示"数据加载失败"提示，不会显示任何假数据。 */
   dataSources: [
-    "https://raw.githubusercontent.com/aresyyyy/community-life-circle/feature/liukai/main-2026-08-29/data.json",
-    "https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@feature/liukai/main-2026-08-29/data.json"
+    "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json",
+    "https://cdn.jsdelivr.net/gh/aresyyyy/community-life-circle@main/data.json"
   ],
-  externalDataUrl: "https://raw.githubusercontent.com/aresyyyy/community-life-circle/feature/liukai/main-2026-08-29/data.json"
+  externalDataUrl: "https://raw.githubusercontent.com/aresyyyy/community-life-circle/main/data.json"
 };
 
 /*

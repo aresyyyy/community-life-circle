@@ -702,7 +702,7 @@ function getGhToken(){ try{ return localStorage.getItem(GITHUB_TOKEN_KEY) || "";
 function saveGhToken(t){ try{ localStorage.setItem(GITHUB_TOKEN_KEY, t); }catch(e){} }
 /* 发布目标：写回 GitHub 仓库固定位置（数据读取用相对路径，发布目标单独配置，保证两者解耦） */
 function parseGithubTarget(){
-  return { owner: "aresyyyy", repo: "community-life-circle", branch: "main", path: "data.json" };
+  return { owner: "aresyyyy", repo: "community-life-circle", branch: "feature/read-local-data", path: "data.json" };
 }
 function utf8ToBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
 function publishToGithub(){

@@ -11,47 +11,124 @@
     "note": ""
   },
   {
-    "cat": "bank",
-    "name": "李若涵",
-    "tag": "",
-    "x": 41.23,
-    "y": 66.69,
-    "address": "",
+    "cat": "square",
+    "name": "高阳小区中心广场",
+    "address": "高阳小区中心广场",
     "tel": "",
-    "hours": "",
-    "note": ""
-  },
-  {
-    "cat": "party",
-    "name": "刘平平",
-    "tag": "",
-    "x": 46.65,
-    "y": 59.85,
-    "address": "",
-    "tel": "",
-    "hours": "",
-    "note": ""
-  },
-  {
-    "cat": "clinic",
-    "name": "韩闯",
-    "tag": "",
-    "x": 27.78,
-    "y": 46.3,
-    "address": "",
-    "tel": "",
-    "hours": "",
-    "note": ""
-  },
-  {
-    "cat": "party",
-    "name": "大门",
-    "address": "",
-    "tel": "",
-    "hours": "",
+    "hours": "全天",
     "note": "",
-    "x": 69.29,
-    "y": 89.3,
+    "x": 28.36,
+    "y": 45.51,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "G1充电桩",
+    "address": "G1南边",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 11.68,
+    "y": 12.99,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "G3充电桩",
+    "address": "",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 28.24,
+    "y": 15.42,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "G7充电桩",
+    "address": "",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 61.07,
+    "y": 13.64,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "74#充电桩",
+    "address": "",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 77.92,
+    "y": 10.39,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "81#充电桩",
+    "address": "",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 84.66,
+    "y": 10.39,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "71#充电桩",
+    "address": "",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 72.24,
+    "y": 28.9,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "68#充电桩",
+    "address": "",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 71.28,
+    "y": 49.84,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "85#充电桩",
+    "address": "",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 87.16,
+    "y": 61.85,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "65#充电桩",
+    "address": "",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 68,
+    "y": 71.43,
+    "tag": ""
+  },
+  {
+    "cat": "charge",
+    "name": "64#充电桩",
+    "address": "",
+    "tel": "",
+    "hours": "全天",
+    "note": "",
+    "x": 68.49,
+    "y": 79.71,
     "tag": ""
   }
 ]

@@ -144,6 +144,7 @@
   .poi.focus::after{content:"";position:absolute;inset:-13px;border-radius:50%;background:rgba(255,255,255,.5);z-index:-1;animation:poiRing 1.4s ease-out infinite}
   @keyframes poiPulse{0%,100%{transform:scale(1.42)}50%{transform:scale(1.58)}}
   @keyframes poiRing{0%{transform:scale(.6);opacity:.95}100%{transform:scale(1.7);opacity:0}}
+  .poi.hidden{display:none}
   .act-btn.loc{background:var(--green-700);color:#fff}
   .act-btn.loc:active{background:var(--green-900)}
   .act-btn.copy{background:var(--green-50);color:var(--green-700)}
@@ -600,8 +601,8 @@ function renderCategoryList(key){
   var list = document.getElementById("placeList");
   list.innerHTML = items.map(function(it){
     var tag = it.tag ? '<span class="place-tag">'+it.tag+'</span>' : '';
-    var kw = it.name + (it.address ? " " + it.address : "");
-    var navUrl = 'https://uri.amap.com/search?keyword=' + encodeURIComponent(kw) + '&callnative=1';
+    var kw = it.name;
+    var navUrl = 'https://uri.amap.com/search?keyword=' + encodeURIComponent('河南省平顶山市' + kw) + '&callnative=1';
     return '<article class="place-card" data-idx="'+it._i+'">'+
       '<div class="place-head">'+
         '<span class="place-ico" style="background:'+c.color+'">'+ICONS[c.icon]+'</span>'+
@@ -664,20 +665,24 @@ function tryMapCandidate(idx){
     fitMap();
     renderPois();
     renderMapList();
-    if(pendingFocus){ centerOnPoint(pendingFocus); pendingFocus = null; }
+    if(pendingFocus){ zoomToPoint(pendingFocus); pendingFocus = null; }
   };
   mapEls.img.onerror = function(){ mapEls.img.onerror = null; tryMapCandidate(idx+1); };
   mapEls.img.src = CONFIG.mapCandidates[idx];
 }
 
-function fitMap(){
+function fitTarget(){
   var vp = mapEls.vp;
   var vw = vp.clientWidth, vh = vp.clientHeight;
   var iw = mapState.imgW, ih = mapState.imgH;
   var s = Math.min(vw/iw, vh/ih);
-  mapState.s = s;
-  mapState.tx = (vw - iw*s)/2;
-  mapState.ty = (vh - ih*s)/2;
+  return { s:s, tx:(vw - iw*s)/2, ty:(vh - ih*s)/2 };
+}
+function fitMap(){
+  var t = fitTarget();
+  mapState.s = t.s;
+  mapState.tx = t.tx;
+  mapState.ty = t.ty;
   applyMapTransform();
 }
 
@@ -712,7 +717,7 @@ function renderPois(){
     var c = CATEGORIES[p.cat] || CATEGORIES.clinic;
     var dim = (currentCat !== "all" && currentCat !== p.cat) ? " dim" : "";
     var usr = p.user ? " user" : "";
-    var fcs = (focusIdx === i) ? " focus" : "";
+    var fcs = (focusIdx === i) ? " focus" : (focusIdx !== -1 ? " hidden" : "");
     var el = document.createElement("div");
     el.className = "poi"+dim+usr+fcs;
     el.setAttribute("data-i", i);
@@ -764,8 +769,8 @@ function renderMapList(){
   wrap.innerHTML = title + points.map(function(it){
     var c = CATEGORIES[it.cat] || CATEGORIES.clinic;
     var tag = it.tag ? '<span class="place-tag">'+it.tag+'</span>' : '';
-    var kw = it.name + (it.address ? " " + it.address : "");
-    var navUrl = 'https://uri.amap.com/search?keyword=' + encodeURIComponent(kw) + '&callnative=1';
+    var kw = it.name;
+    var navUrl = 'https://uri.amap.com/search?keyword=' + encodeURIComponent('河南省平顶山市' + kw) + '&callnative=1';
     return '<article class="place-card" data-i="'+it._i+'">'+
       '<div class="place-head">'+
         '<span class="place-ico" style="background:'+c.color+'">'+ICONS[c.icon]+'</span>'+
@@ -815,8 +820,8 @@ function openSheet(p){
     return '<li>'+m[0]+'<span>'+m[1]+'</span></li>';
   }).join("");
   document.getElementById("sheetTel").setAttribute("href", "tel:"+p.tel);
-  var kw = p.name + (p.address ? " " + p.address : "");
-  var navUrl = 'https://uri.amap.com/search?keyword=' + encodeURIComponent(kw) + '&callnative=1';
+  var kw = p.name;
+  var navUrl = 'https://uri.amap.com/search?keyword=' + encodeURIComponent('河南省平顶山市' + kw) + '&callnative=1';
   document.getElementById("sheetNav").setAttribute("href", navUrl);
   currentSheetPoint = p;
   var del = document.getElementById("sheetDel");
@@ -842,25 +847,69 @@ function focusPoint(p){
     switchView("map");
     renderPois();
     renderMapList();
-    fitMap();
-    centerOnPoint(p);
+    zoomToPoint(p);
     pendingFocus = null;
     if(location.hash !== "#/map"){ try{ location.hash = "#/map"; }catch(e){} }
   }
   openSheet(p);
 }
 
-function centerOnPoint(p){
+var FOCUS_ZOOM = 3;        // 聚焦放大倍数（相对铺满比例，可调）
+var FOCUS_IN_MS = 600;     // 放大动画时长（毫秒，慢一点）
+var FOCUS_OUT_MS = 380;    // 缩小动画时长（毫秒）
+
+var zoomAnimId = null;
+function cancelZoomAnim(){
+  if(zoomAnimId !== null){ cancelAnimationFrame(zoomAnimId); zoomAnimId = null; }
+}
+function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+// 从当前状态平滑过渡到目标 (s,tx,ty)
+function animateMapTo(s, tx, ty, ms){
+  cancelZoomAnim();
+  var fromS = mapState.s, fromTx = mapState.tx, fromTy = mapState.ty;
+  var t0 = null;
+  function step(t){
+    if(t0 === null) t0 = t;
+    var k = Math.min(1, (t - t0) / ms);
+    var e = easeOutCubic(k);
+    mapState.s = fromS + (s - fromS) * e;
+    mapState.tx = fromTx + (tx - fromTx) * e;
+    mapState.ty = fromTy + (ty - fromTy) * e;
+    applyMapTransform();
+    if(k < 1){ zoomAnimId = requestAnimationFrame(step); }
+    else { zoomAnimId = null; }
+  }
+  zoomAnimId = requestAnimationFrame(step);
+}
+
+function fitScale(){
+  return Math.min(mapEls.vp.clientWidth/mapState.imgW, mapEls.vp.clientHeight/mapState.imgH);
+}
+function zoomToPoint(p){
   if(!mapEls || !mapState || !mapState.imgW){
-    requestAnimationFrame(function(){ centerOnPoint(p); });
+    requestAnimationFrame(function(){ zoomToPoint(p); });
     return;
   }
   var vp = mapEls.vp;
   var vw = vp.clientWidth || 360, vh = vp.clientHeight || 560;
+  var s = Math.min(6, Math.max(0.4, fitScale() * FOCUS_ZOOM));
   var px = p.x / 100 * mapState.imgW, py = p.y / 100 * mapState.imgH;
-  mapState.tx = vw / 2 - px * mapState.s;
-  mapState.ty = vh / 2 - py * mapState.s;
-  applyMapTransform();
+  animateMapTo(s, vw / 2 - px * s, vh / 2 - py * s, FOCUS_IN_MS);
+}
+function applyFocusTransform(){
+  if(focusIdx >= 0){
+    var p = allPoints()[focusIdx];
+    if(p){ zoomToPoint(p); return; }
+  }
+  fitMap();
+}
+function clearFocus(){
+  if(focusIdx === -1) return;
+  focusIdx = -1;
+  renderPois();
+  var t = fitTarget();
+  animateMapTo(t.s, t.tx, t.ty, FOCUS_OUT_MS);
 }
 
 function copyAddr(p, btn){
@@ -905,8 +954,10 @@ function showSheet(el){
   el.classList.add("show");
 }
 function hideSheets(){
+  var storeOpen = document.getElementById("sheet").classList.contains("show");
   document.getElementById("sheetMask").classList.remove("show");
   document.querySelectorAll(".sheet").forEach(function(s){ s.classList.remove("show"); });
+  if(storeOpen){ clearFocus(); }
 }
 
 /* ================= 标注模式 ================= */
@@ -967,6 +1018,7 @@ function bindMapEvents(){
 
   vp.addEventListener("pointerdown", function(e){
     if(e.target.closest(".tool-btn")) return;
+    cancelZoomAnim();
     downPos = { x:e.clientX, y:e.clientY };
     startT = { tx:mapState.tx, ty:mapState.ty };
     moved = false;
@@ -1040,8 +1092,8 @@ function showMap(){
   if(!mapState.inited){ initMapView(); }
   else {
     requestAnimationFrame(function(){
-      fitMap();
-      if(pendingFocus){ centerOnPoint(pendingFocus); pendingFocus = null; }
+      applyFocusTransform();
+      pendingFocus = null;
     });
   }
 }

@@ -916,7 +916,7 @@
     "cat": "wellness",
     "name": "金方保健服务馆",
     "tag": "",
-    "x": 46.48,
+    "x": 46.2,
     "y": 25.43,
     "address": "41号楼211",
     "tel": "",
@@ -1053,6 +1053,105 @@
     "note": "",
     "x": 88.88,
     "y": 2.58,
+    "tag": ""
+  },
+  {
+    "cat": "restaurant",
+    "name": "建良糕点",
+    "address": "高阳小区西北角",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 4.06,
+    "y": 5.6,
+    "tag": ""
+  },
+  {
+    "cat": "restaurant",
+    "name": "九多肉多",
+    "address": "湛南路与创业大道交叉口",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 6.52,
+    "y": 4.73,
+    "tag": ""
+  },
+  {
+    "cat": "restaurant",
+    "name": "卤优优卤味",
+    "address": "湛南路与创业大道交叉口东南角第二间商铺",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 9.45,
+    "y": 4.06,
+    "tag": ""
+  },
+  {
+    "cat": "restaurant",
+    "name": "悦源大酒店",
+    "address": "",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 28.93,
+    "y": 87.93,
+    "tag": ""
+  },
+  {
+    "cat": "restaurant",
+    "name": "邹福记私房炒鸡",
+    "address": "",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 36.85,
+    "y": 83.12,
+    "tag": ""
+  },
+  {
+    "cat": "restaurant",
+    "name": "卧龙屯铁锅炖",
+    "address": "",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 41.49,
+    "y": 83.85,
+    "tag": ""
+  },
+  {
+    "cat": "restaurant",
+    "name": "蜜雪冰城",
+    "address": "高阳小区西门南边一号",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 4.06,
+    "y": 56.08,
+    "tag": ""
+  },
+  {
+    "cat": "restaurant",
+    "name": "溢香源牛肉胡辣汤",
+    "address": "高阳小区西门北",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 4.14,
+    "y": 45.13,
+    "tag": ""
+  },
+  {
+    "cat": "restaurant",
+    "name": "银记羊汤烩面",
+    "address": "",
+    "tel": "",
+    "hours": "",
+    "note": "",
+    "x": 5.05,
+    "y": 38.25,
     "tag": ""
   }
 ]

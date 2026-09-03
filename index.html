@@ -61,7 +61,7 @@
   .home-body{padding:20px 18px 44px}
 
   .map-entry{
-    display:flex;align-items:center;gap:14px;
+    display:flex;align-items:center;gap:51px;
     background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);
     padding:15px 16px;margin:4px 0 22px;
     transition:transform .14s ease;
@@ -408,21 +408,21 @@ var BUILTIN_POINTS = [];
 
 /* 分类配置（颜色即地图点位颜色） */
 var CATEGORIES = {
-  party:       { name:"党群服务中心", desc:"党群服务中心与政务服务",   color:"#C0392B", icon:"flag" },
-  school:      { name:"教育服务",         desc:"幼儿园、中小学与教育机构", color:"#4A7BD0", icon:"graduation" },
-  charge:      { name:"充电桩",       desc:"电动车与汽车充电设施",     color:"#2E9E5B", icon:"plugzap" },
-  supermarket: { name:"超市购物",         desc:"超市与生鲜便利",           color:"#E8942E", icon:"market" },
-  express:     { name:"快递",         desc:"快递驿站与寄取件点",       color:"#3A9DB5", icon:"express" },
-  clinic:      { name:"医疗服务",         desc:"社区诊所与医疗机构",       color:"#E05A4E", icon:"clinic" },
-  bus:         { name:"公交站点",     desc:"公交站点与出行服务",       color:"#5D7FA3", icon:"bus" },
-  toilet:      { name:"公厕",         desc:"公共卫生间",               color:"#7A8A99", icon:"toilet" },
-  bank:        { name:"银行",         desc:"银行网点与自助服务",       color:"#3A7BD5", icon:"bank" },
-  square:      { name:"广场",         desc:"广场与公共活动空间",       color:"#9B59B6", icon:"landmark" },
-  restaurant: { name:"餐饮服务",     desc:"餐饮、饭店与小吃美食",     color:"#A0522D", icon:"restaurant" },
-  wellness:    { name:"养生服务",     desc:"推拿理疗、养生保健服务",   color:"#00897B", icon:"wellness" },
-  fashion:     { name:"服装服饰",     desc:"服装服饰与鞋帽零售",       color:"#D81B60", icon:"fashion" },
-  life:        { name:"生活保障",     desc:"生活保障与便民服务",       color:"#3949AB", icon:"life" },
-  beauty:      { name:"美容美发",     desc:"美容美发与造型护理",       color:"#D4AC0D", icon:"beauty" }
+  party:       { name:"党群服务中心", desc:"党群服务中心与政务服务",   color:"#C0392B", icon:"flag", unit: '处' },
+  school:      { name:"教育服务",         desc:"幼儿园、中小学与教育机构", color:"#4A7BD0", icon:"graduation", unit: '家' },
+  charge:      { name:"充电桩",       desc:"电动车与汽车充电设施",     color:"#2E9E5B", icon:"plugzap", unit: '处' },
+  supermarket: { name:"超市购物",         desc:"超市与生鲜便利",           color:"#E8942E", icon:"market", unit: '家' },
+  express:     { name:"快递",         desc:"快递驿站与寄取件点",       color:"#3A9DB5", icon:"express", unit: '个' },
+  clinic:      { name:"医疗服务",         desc:"社区诊所与医疗机构",       color:"#E05A4E", icon:"clinic", unit: '家' },
+  bus:         { name:"公交站点",     desc:"公交站点与出行服务",       color:"#5D7FA3", icon:"bus", unit: '个' },
+  toilet:      { name:"公厕",         desc:"公共卫生间",               color:"#7A8A99", icon:"toilet", unit: '个' },
+  bank:        { name:"银行",         desc:"银行网点与自助服务",       color:"#3A7BD5", icon:"bank", unit: '家' },
+  square:      { name:"广场",         desc:"广场与公共活动空间",       color:"#9B59B6", icon:"landmark", unit: '个' },
+  restaurant: { name:"餐饮服务",     desc:"餐饮、饭店与小吃美食",     color:"#A0522D", icon:"restaurant", unit: '家' },
+  wellness:    { name:"养生服务",     desc:"推拿理疗、养生保健服务",   color:"#00897B", icon:"wellness", unit: '家' },
+  fashion:     { name:"服装服饰",     desc:"服装服饰与鞋帽零售",       color:"#D81B60", icon:"fashion", unit: '家' },
+  life:        { name:"生活保障",     desc:"生活保障与便民服务",       color:"#3949AB", icon:"life", unit: '家' },
+  beauty:      { name:"美容美发",     desc:"美容美发与造型护理",       color:"#D4AC0D", icon:"beauty", unit: '家' }
 };
 var CAT_ORDER = ["party","school","charge","supermarket","express","clinic","bus","toilet","bank","square","restaurant","wellness","fashion","life","beauty"];
 
@@ -581,7 +581,7 @@ function renderHome(){
   grid.innerHTML = CAT_ORDER.map(function(key){
     var c = CATEGORIES[key];
     var n = allPoints().filter(function(p){ return p.cat === key; }).length;
-    var cnt = loading ? '<span class="cat-count">…</span>' : '<span class="cat-count">'+n+'家</span>';
+    var cnt = loading ? '<span class="cat-count">…</span>' : '<span class="cat-count">' + n + c.unit + '</span>';
     return '<button class="cat-btn" data-key="'+key+'">'+
       '<span class="cat-ico" style="background:'+c.color+'22;color:'+c.color+'">'+ICONS[c.icon]+'</span>'+
       '<span>'+c.name+'</span>'+cnt+'</button>';
